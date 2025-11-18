@@ -39,6 +39,7 @@ env.bak/
 venv.bak/
 .venv/
 .conda/
+langgraph/
 
 # IDE
 .vscode/
