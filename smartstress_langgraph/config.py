@@ -14,8 +14,71 @@ GEMINI_EMBED_MODEL: str = os.getenv(
     "SMARTSTRESS_GEMINI_EMBED_MODEL", "gemini-embedding-001"
 )
 
-# Path to the local API key file (relative to project root or this package)
+# Local secrets files (relative to project root or this package)
 API_KEY_FILENAME = ".API_KEY"
+DOTENV_FILENAME = ".env"
+
+_ENV_FILES_INITIALISED = False
+
+
+def _find_project_root() -> Path:
+    """Return the package root (Agents_LangGraph)."""
+    return Path(__file__).resolve().parent.parent
+
+
+def _initialise_env_files() -> None:
+    """Ensure dotenv-based environment variables are loaded once."""
+    global _ENV_FILES_INITIALISED
+    if _ENV_FILES_INITIALISED:
+        return
+    _ENV_FILES_INITIALISED = True
+    _load_env_file()
+
+
+def _load_env_file() -> None:
+    """
+    Populate os.environ with values from a .env file if present.
+
+    Search order:
+    1. SMARTSTRESS_DOTENV_FILE env var
+    2. Agents_LangGraph directory (one level above this package)
+    3. Current working directory
+    """
+    env_path = os.getenv("SMARTSTRESS_DOTENV_FILE")
+    candidates = []
+    if env_path:
+        candidates.append(Path(env_path).expanduser())
+
+    pkg_root = _find_project_root()
+    candidates.append(pkg_root / DOTENV_FILENAME)
+    candidates.append(Path.cwd() / DOTENV_FILENAME)
+
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        _parse_dotenv(candidate)
+        break
+
+
+def _parse_dotenv(path: Path) -> None:
+    """Parse a dotenv file and set vars if missing."""
+    try:
+        content = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+
+    for line in content:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        key = key.strip()
+        if not key:
+            continue
+        value = value.strip().strip("\"'")  # tolerate simple quoting
+        os.environ.setdefault(key, value)
 
 
 def _find_api_key_file() -> Optional[Path]:
@@ -34,7 +97,7 @@ def _find_api_key_file() -> Optional[Path]:
             return p
 
     # Package root: smartstress_langgraph/.. -> Agents_LangGraph
-    pkg_root = Path(__file__).resolve().parent.parent
+    pkg_root = _find_project_root()
     candidate = pkg_root / API_KEY_FILENAME
     if candidate.is_file():
         return candidate
@@ -60,6 +123,8 @@ def load_google_api_key() -> str:
     Environment override:
         If GOOGLE_API_KEY env var is set, it is used directly.
     """
+    _initialise_env_files()
+
     env_key = os.getenv("GOOGLE_API_KEY")
     if env_key:
         return env_key.strip()
@@ -67,9 +132,9 @@ def load_google_api_key() -> str:
     api_key_path = _find_api_key_file()
     if not api_key_path:
         raise RuntimeError(
-            "GOOGLE_API_KEY not found. Please set the GOOGLE_API_KEY "
-            "environment variable or create a .API_KEY file in Agents_LangGraph "
-            "containing the key."
+            "GOOGLE_API_KEY not found. Set the GOOGLE_API_KEY environment variable "
+            "or add it to a .env file (GOOGLE_API_KEY=...) before starting the app. "
+            "A legacy .API_KEY file is still supported if present."
         )
 
     content = api_key_path.read_text(encoding="utf-8").strip()

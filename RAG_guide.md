@@ -6,33 +6,33 @@ database and surface them inside the MindCare dialogue flow.
 ### 1. Prepare Documents
 
 - Put all Markdown/TXT sources you want to index under a folder such as
-  `Agents_LangGraph/rag_docs/`.
+  `rag_docs/` at the project root.
 - The reference implementation currently supports `.md` and `.txt`. Extend the
   ingestion script if you need PDF or other formats.
 
 ### 2. Configure `GOOGLE_API_KEY`
 
-1. Store your Google API key in `Agents_LangGraph/.API_KEY`, for example:
+1. Recommended: store your Google API key in a `.env` file at the project root:
 
    ```text
    GOOGLE_API_KEY=your_real_key_here
    ```
 
-2. Alternatively set an environment variable:
+2. Alternatively set an environment variable before running the scripts:
 
    ```bash
    set GOOGLE_API_KEY=your_real_key_here
    ```
 
-   The runtime prefers the environment variable and falls back to the
-   `.API_KEY` file.
+   The runtime reads from environment variables first, then `.env`, and finally
+   falls back to a legacy `.API_KEY` file if you still keep one around.
 
 ### 3. Install Dependencies
 
-From the project root (the directory containing `Agents_LangGraph`) run:
+From the project root run:
 
 ```bash
-pip install -r Agents_LangGraph/requirements.txt
+pip install -r requirements.txt
 ```
 
 Key packages:
@@ -48,21 +48,21 @@ Key packages:
 From the project root:
 
 ```bash
-python -m Agents_LangGraph.smartstress_langgraph.examples.ingest_docs_example Agents_LangGraph/rag_docs
+python -m smartstress_langgraph.examples.ingest_docs_example rag_docs
 ```
 
 The script will:
 
 - Use `load_documents_from_folder()` to read `.md`/`.txt` files.
 - Create embeddings with `gemini-embedding-001`.
-- Store vectors in the local Chroma database at `Agents_LangGraph/.rag_store`.
+- Store vectors in the local Chroma database at `smartstress_langgraph/.rag_store`.
 
 You can also ingest programmatically:
 
 ```python
-from Agents_LangGraph.smartstress_langgraph import ingest_documents
+from smartstress_langgraph import ingest_documents
 
-stats = ingest_documents("Agents_LangGraph/rag_docs", tags=["psychoeducation"])
+stats = ingest_documents("rag_docs", tags=["psychoeducation"])
 print("Ingested docs:", stats)
 ```
 
@@ -75,11 +75,11 @@ print("Ingested docs:", stats)
 
 ### 6. Reset the Index
 
-- The vector store persists under `Agents_LangGraph/.rag_store`.
+- The vector store persists under `smartstress_langgraph/.rag_store`.
 - Delete that folder if you need to rebuild the index from scratch:
 
 ```bash
-rm -rf Agents_LangGraph/.rag_store
+rm -rf smartstress_langgraph/.rag_store
 ```
 
 Then re-run the ingestion script.

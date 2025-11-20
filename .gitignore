@@ -1,5 +1,4 @@
 # API Keys and Secrets
-.API_KEY
 *.key
 *.pem
 .env
@@ -109,4 +108,6 @@ dmypy.json
 *.chroma
 vectorstore/
 chromadb/
+rag_docs/
+.rag_store/
 

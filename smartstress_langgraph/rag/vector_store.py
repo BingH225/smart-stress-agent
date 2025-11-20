@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Sequence, Tuple
+from typing import Any, List, Sequence, Tuple
 
 import chromadb
 from chromadb import Collection
@@ -28,15 +28,18 @@ class VectorStore:
         texts = [d.content for d in docs]
         embeddings = embed_documents(texts)
         ids = [d.id or f"doc-{i}" for i, d in enumerate(docs)]
-        metadatas = [
-            {
-                "source": d.source,
-                "section": d.section,
-                "created_at": d.created_at,
-                "tags": d.tags,
-            }
-            for d in docs
-        ]
+        metadatas = []
+        for d in docs:
+            metadata: dict[str, Any] = {}
+            if d.source:
+                metadata["source"] = d.source
+            if d.section:
+                metadata["section"] = d.section
+            if d.created_at:
+                metadata["created_at"] = d.created_at
+            if d.tags:
+                metadata["tags"] = ", ".join(d.tags)
+            metadatas.append(metadata)
         self.collection.add(
             ids=ids,
             embeddings=embeddings,

@@ -24,13 +24,13 @@ See `RAG_guide.md` for vector-store ingestion instructions.
 2. Provide credentials:
 
    - Option A: set environment variable `GOOGLE_API_KEY`.
-   - Option B: place the key in `Agents_LangGraph/.API_KEY`:
+   - Option B: add it to a `.env` file in this directory:
 
      ```text
      GOOGLE_API_KEY=your_real_key_here
      ```
 
-   The file is ignored by git.
+     (A legacy `.API_KEY` file is still recognised if you prefer that layout.)
 
 ### 2. Quick Start (Python)
 

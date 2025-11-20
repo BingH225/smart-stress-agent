@@ -25,13 +25,19 @@ def _ensure_configured() -> None:
     _configured = True
 
 
-def get_chat_client(model: Optional[str] = None) -> GenerativeModel:
+def get_chat_client(
+    model: Optional[str] = None,
+    system_prompt: Optional[str] = None,
+) -> GenerativeModel:
     """
     Return a configured GenerativeModel for chat completion.
     """
     _ensure_configured()
     model_name = model or GEMINI_CHAT_MODEL
-    return genai.GenerativeModel(model_name)
+    kwargs: Dict[str, Any] = {}
+    if system_prompt:
+        kwargs["system_instruction"] = system_prompt
+    return genai.GenerativeModel(model_name, **kwargs)
 
 
 def generate_chat(
@@ -45,17 +51,25 @@ def generate_chat(
     This is intentionally minimal; higher-level tooling (e.g., LangChain) can
     be integrated later if needed.
     """
-    client = get_chat_client()
+    client = get_chat_client(system_prompt=system_prompt)
     cfg = get_default_generation_config()
     if generation_config:
         cfg.update(generation_config)
 
     # google-generativeai expects a list of content blocks; we map roles.
     history = []
-    if system_prompt:
-        history.append({"role": "system", "parts": [system_prompt]})
+
+    def _map_role(role: str) -> str:
+        lowered = role.lower()
+        if lowered in {"assistant", "model"}:
+            return "model"
+        # Treat system/other roles as user instructions for Gemini
+        return "user"
+
     for m in messages:
-        history.append({"role": m["role"], "parts": [m["content"]]})
+        history.append(
+            {"role": _map_role(m.get("role", "user")), "parts": [{"text": m.get("content", "")}]}
+        )
 
     response = client.generate_content(history, generation_config=cfg)
     return response.text or ""
@@ -72,11 +86,28 @@ def embed_documents(texts: Iterable[str]) -> List[List[float]]:
             embeddings.append([])
             continue
         res = genai.embed_content(model=GEMINI_EMBED_MODEL, content=t)
-        # google-generativeai returns a dict with an "embedding" vector
-        embedding = res.get("embedding", {})  # type: ignore[assignment]
-        values = embedding.get("values") or embedding.get("value") or []
-        embeddings.append(list(values))
+        data = _extract_embedding_payload(res)
+        embeddings.append(_coerce_embedding(data))
     return embeddings
+
+
+def _extract_embedding_payload(response: Any) -> Any:
+    if isinstance(response, dict) and "embedding" in response:
+        return response["embedding"]
+    return response
+
+
+def _coerce_embedding(data: Any) -> List[float]:
+    if isinstance(data, dict):
+        data = data.get("values") or data.get("value") or []
+
+    if isinstance(data, list):
+        return [float(v) for v in data if isinstance(v, (int, float))]
+
+    try:
+        return [float(data)]
+    except Exception:  # noqa: BLE001
+        return []
 
 
 
