@@ -110,5 +110,5 @@ vectorstore/
 chromadb/
 rag_docs/
 .rag_store/
-Agents_develop_LangGraph
+Agents_develop_LangGraph.md
 
