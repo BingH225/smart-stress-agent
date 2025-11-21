@@ -8,7 +8,7 @@ from typing import Optional
 
 # Default model names (can be overridden via env vars)
 GEMINI_CHAT_MODEL: str = os.getenv(
-    "SMARTSTRESS_GEMINI_CHAT_MODEL", "gemini-2.5-flash-lite"
+    "SMARTSTRESS_GEMINI_CHAT_MODEL", "gemini-2.5-flash"
 )
 GEMINI_EMBED_MODEL: str = os.getenv(
     "SMARTSTRESS_GEMINI_EMBED_MODEL", "gemini-embedding-001"
@@ -166,7 +166,7 @@ def load_google_api_key() -> str:
 def get_default_generation_config() -> dict:
     """Default hyper-parameters for Gemini chat models."""
     return {
-        "temperature": float(os.getenv("SMARTSTRESS_TEMPERATURE", "0.3")),
+        "temperature": float(os.getenv("SMARTSTRESS_TEMPERATURE", "0.5")),
         "top_p": float(os.getenv("SMARTSTRESS_TOP_P", "0.9")),
         "top_k": int(os.getenv("SMARTSTRESS_TOP_K", "40")),
         "max_output_tokens": int(os.getenv("SMARTSTRESS_MAX_TOKENS", "1024")),

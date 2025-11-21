@@ -6,7 +6,7 @@ service and React frontend.
 
 - Agents: PhysioSense (detection), MindCare (dialogue + HITL), TaskRelief
   (planning + execution via mock tools, ready for real APIs).
-- LLM: Google Gemini (`gemini-2.5-flash-lite` for chat,
+- LLM: Google Gemini (`gemini-2.5-flash` for chat,
   `gemini-embedding-001` for RAG embeddings) accessed through `GOOGLE_API_KEY`.
 - Safety: explicit HITL interrupt, audit trail, error logging, and RAG evidence
   snapshots stored in the shared state.
