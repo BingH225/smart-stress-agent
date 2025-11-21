@@ -1,74 +1,115 @@
-## SmartStress LangGraph Backend (SDK)
+# SmartStress Agent (LangGraph Edition)
 
-This folder contains a LangGraph-based multi-agent backend for SmartStress,
-implemented as a pure Python SDK that can be imported by the existing FastAPI
-service and React frontend.
+SmartStress is a **multi-agent** stress monitoring and intervention system built on **LangGraph**. It combines **physiological data analysis** (PhysioSense) with **Large Language Models** (LLM) to provide a closed-loop service ranging from stress detection and psychological support to schedule intervention.
 
-- Agents: PhysioSense (detection), MindCare (dialogue + HITL), TaskRelief
-  (planning + execution via mock tools, ready for real APIs).
-- LLM: Google Gemini (`gemini-2.5-flash` for chat,
-  `gemini-embedding-001` for RAG embeddings) accessed through `GOOGLE_API_KEY`.
-- Safety: explicit HITL interrupt, audit trail, error logging, and RAG evidence
-  snapshots stored in the shared state.
+## 🌟 Core Features
 
-See `RAG_guide.md` for vector-store ingestion instructions.
+  * **State Machine Architecture**: Powered by a LangGraph directed cyclic graph, supporting a non-linear "Monitor -\> Detect -\> Intervene -\> Monitor" workflow.
+  * **Multi-Modal Sensing**: Integrates physiological sensor data (HR, HRV) with natural language dialogue for precise stress assessment.
+  * **Data Persistence**: Built-in **SQLite** backend ensuring cross-session memory, long-term conversation history retention, and state recovery after system restarts.
+  * **Human-in-the-Loop (Safety)**: Critical operations (like schedule modifications) feature an interrupt mechanism requiring explicit human confirmation to ensure clinical and operational safety.
+  * **RAG Knowledge Base**: Integrated vector retrieval provides the AI with psychology-based advice grounded in local documents.
 
-### 1. Setup
+## 🧠 Agent Architecture
 
-1. Install dependencies (from repo root):
+The system consists of three collaborative Agent nodes:
 
-   ```bash
-   pip install -r Agents_LangGraph/requirements.txt
-   ```
+| Agent Node      | Role                  | Responsibility                                                                                                   |
+| :-------------- | :-------------------- | :--------------------------------------------------------------------------------------------------------------- |
+| **PhysioSense** | Physiological Sensing | Analyzes sensor data (HR, HRV) to calculate real-time stress probability.                                        |
+| **MindCare**    | Psychological Support | Engages in empathetic dialogue, identifies specific stressors, and queries the RAG knowledge base when needed.   |
+| **TaskRelief**  | Task Intervention     | Generates concrete schedule adjustment plans based on identified stressors and executes them upon user approval. |
 
-2. Provide credentials:
+## 🛠️ Installation & Configuration
 
-   - Option A: set environment variable `GOOGLE_API_KEY`.
-   - Option B: add it to a `.env` file in this directory:
+### 1\. Prerequisites
 
-     ```text
-     GOOGLE_API_KEY=your_real_key_here
-     ```
+Python 3.10+ is required. Using a virtual environment is recommended.
 
-     (A legacy `.API_KEY` file is still recognised if you prefer that layout.)
-
-### 2. Quick Start (Python)
-
-```python
-from Agents_LangGraph.smartstress_langgraph import (
-    start_monitoring_session,
-    continue_session,
-)
-from Agents_LangGraph.smartstress_langgraph.io_models import (
-    StartSessionRequest, ContinueSessionRequest,
-    UserInfo, SensorData, ChatMessage,
-)
-
-start_req = StartSessionRequest(
-    user=UserInfo(user_id="p001", session_id="sess-001"),
-    initial_sensor_data=SensorData(timestamp="2024-01-01T10:00:00Z", values={"hr": 95}),
-)
-handle, state = start_monitoring_session(start_req)
-
-follow_up = ContinueSessionRequest(
-    session_handle=handle,
-    user_message=ChatMessage(
-        role="user",
-        content="The 3pm cross-team review is stressing me out and I still need slides.",
-    ),
-)
-handle, updated_state = continue_session(follow_up)
+```bash
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-`state` / `updated_state` are `SmartStressStateView` objects that can be sent
-to the existing backend/React application.
+### 2\. Configure API Key
 
-### 3. Feature Highlights
+The system relies on Google Gemini models. Create a `.env` file in the project root or set the environment variable:
 
-- `smartstress_langgraph/state.py`: Typed state with audit trail/logging helpers.
-- `smartstress_langgraph/nodes/`: PhysioSense, MindCare, TaskRelief logic.
-- `smartstress_langgraph/rag/`: Local Chroma vector store with ingest/retrieve APIs.
-- `smartstress_langgraph/examples/`: CLI demos for session flow and RAG ingestion.
+```env
+GOOGLE_API_KEY=your_google_api_key_here
+```
 
+*(Alternatively, you can use a legacy `.API_KEY` file)*
 
+## 🚀 Quick Start
 
+### Using the SDK
+
+You can directly import the core SDK in Python to start or continue a session:
+
+```python
+from smartstress_langgraph.api import start_monitoring_session
+from smartstress_langgraph.io_models import StartSessionRequest, UserInfo, SensorData
+
+# 1. Start a session (Automatically creates SQLite persistence record)
+handle, state = start_monitoring_session(
+    StartSessionRequest(
+        user=UserInfo(user_id="user_1", session_id="session_alpha"),
+        initial_sensor_data=SensorData(timestamp="...", values={"hr": 95})
+    )
+)
+
+# 2. Inspect current state
+print(f"Current Stress Probability: {state.current_stress_prob}")
+```
+
+### Test Scripts
+
+The project includes several ready-to-use scripts for verifying core functionality:
+
+  * `python run_api_key_test.py`: Smoke test for the full "Sense -\> Chat -\> Plan" flow.
+  * `python verify_persistence.py`: Verifies state recovery from `smartstress.db` after a restart.
+  * `python test_memory_recall.py`: Simulates resuming a conversation to test context memory.
+
+### Starting the Server
+
+The project includes a FastAPI server for REST API access and frontend hosting.
+
+```bash
+python server.py
+```
+
+  * **API Docs**: `http://localhost:8000/docs`
+  * **Frontend**: `http://localhost:8000` (Requires frontend build files)
+
+## 📚 RAG Knowledge Base Management
+
+MindCare can utilize local documents to enhance its responses.
+
+1.  Place `.txt` or `.md` files in the `rag_docs/` directory.
+2.  Run the ingestion script:
+    ```bash
+    python -m smartstress_langgraph.examples.ingest_docs_example rag_docs
+    ```
+    This generates a local vector index (`.rag_store/`) for runtime retrieval.
+
+## 📂 Project Structure
+
+```text
+smart-stress-agent/
+├── smartstress_langgraph/    # Core SDK Package
+│   ├── nodes/                # Agent Logic (PhysioSense, MindCare, TaskRelief)
+│   ├── rag/                  # Vector Store & Retrieval Logic
+│   ├── llm/                  # Gemini Client Wrapper
+│   ├── graph.py              # LangGraph Definition & SQLite Persistence
+│   ├── state.py              # Global State (TypedDict) Definition
+│   └── api.py                # High-level Business API
+├── server.py                 # FastAPI Backend Entry Point
+├── verify_persistence.py     # Persistence Test Script
+├── run_api_key_test.py       # Workflow Smoke Test
+└── requirements.txt          # Dependencies
+```
+
+-----
+
+*Note: Session data is stored in the local `smartstress.db` file by default. Delete this file if you wish to reset the experimental environment.*
