@@ -15,7 +15,6 @@ from .io_models import (
 from .state import SessionHandle, SmartStressState
 
 APP = build_app()
-_SESSION_CACHE: Dict[str, SmartStressState] = {}
 
 
 def _blank_state(user_id: str, session_id: str) -> SmartStressState:
@@ -76,15 +75,21 @@ def _state_to_view(state: SmartStressState) -> SmartStressStateView:
     )
 
 
-def _cache_state(thread_id: str, state: SmartStressState) -> None:
-    _SESSION_CACHE[thread_id] = deepcopy(state)
-
-
 def _load_cached_state(handle: SessionHandle) -> SmartStressState:
-    cached = _SESSION_CACHE.get(handle.thread_id)
-    if cached is None:
-        return _blank_state(handle.user_id, handle.session_id)
-    return deepcopy(cached)
+    """
+    Fetch state directly from the persistent graph checkpoint.
+    """
+    config = {"configurable": {"thread_id": handle.thread_id}}
+    try:
+        # APP is the compiled graph imported from .graph
+        current_snapshot = APP.get_state(config)
+        if current_snapshot.values:
+            return current_snapshot.values
+    except Exception:
+        # No checkpoint exists yet, return blank
+        pass
+        
+    return _blank_state(handle.user_id, handle.session_id)
 
 
 def start_monitoring_session(
@@ -106,7 +111,6 @@ def start_monitoring_session(
     config = {"configurable": {"thread_id": handle.thread_id}}
     result = APP.invoke(deepcopy(initial_state), config=config)
     state = result if isinstance(result, dict) else result[0]
-    _cache_state(handle.thread_id, state)
     return SessionHandleModel.from_handle(handle), _state_to_view(state)
 
 
@@ -135,7 +139,6 @@ def continue_session(
     config = {"configurable": {"thread_id": handle.thread_id}}
     result = APP.invoke(deepcopy(state), config=config)
     new_state = result if isinstance(result, dict) else result[0]
-    _cache_state(handle.thread_id, new_state)
     return SessionHandleModel.from_handle(handle), _state_to_view(new_state)
 
 

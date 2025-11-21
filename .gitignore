@@ -62,6 +62,8 @@ chroma_db/
 .vectorstore/
 data/
 *.db
+*.db-shm
+*.db-wal
 *.sqlite
 *.sqlite3
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.memory import MemorySaver as InMemorySaver
+from langgraph.graph import StateGraph, END
 
 from .nodes import (
     physio_sense_node,
@@ -66,6 +66,11 @@ def build_workflow_graph() -> StateGraph:
 _APP = None
 
 
+import sqlite3
+from langgraph.checkpoint.sqlite import SqliteSaver as SqliteSaver
+
+# ...
+
 def build_app():
     """
     Compile (once) and return a LangGraph app with HITL interrupt configuration.
@@ -73,7 +78,11 @@ def build_app():
     global _APP
     if _APP is None:
         workflow = build_workflow_graph()
-        checkpointer = InMemorySaver()
+        
+        # Create DB connection (check_same_thread=False is needed for FastAPI)
+        conn = sqlite3.connect("smartstress.db", check_same_thread=False)
+        checkpointer = SqliteSaver(conn)
+        
         _APP = workflow.compile(
             checkpointer=checkpointer,
             interrupt_before=["wait_for_human_input"],
