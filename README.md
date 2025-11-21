@@ -4,11 +4,11 @@ SmartStress is a **multi-agent** stress monitoring and intervention system built
 
 ## 🌟 Core Features
 
-  * **State Machine Architecture**: Powered by a LangGraph directed cyclic graph, supporting a non-linear "Monitor -\> Detect -\> Intervene -\> Monitor" workflow.
-  * **Multi-Modal Sensing**: Integrates physiological sensor data (HR, HRV) with natural language dialogue for precise stress assessment.
-  * **Data Persistence**: Built-in **SQLite** backend ensuring cross-session memory, long-term conversation history retention, and state recovery after system restarts.
-  * **Human-in-the-Loop (Safety)**: Critical operations (like schedule modifications) feature an interrupt mechanism requiring explicit human confirmation to ensure clinical and operational safety.
-  * **RAG Knowledge Base**: Integrated vector retrieval provides the AI with psychology-based advice grounded in local documents.
+* **State Machine Architecture**: Powered by a LangGraph directed cyclic graph, supporting a non-linear "Monitor -> Detect -> Intervene -> Monitor" workflow.
+* **Multi-Modal Sensing**: Integrates physiological sensor data (HR, HRV) with natural language dialogue for precise stress assessment.
+* **Data Persistence**: Built-in **SQLite** backend ensuring cross-session memory, long-term conversation history retention, and state recovery after system restarts.
+* **Human-in-the-Loop (Safety)**: Critical operations (like schedule modifications) feature an interrupt mechanism requiring explicit human confirmation to ensure clinical and operational safety.
+* **RAG Knowledge Base**: Integrated vector retrieval provides the AI with psychology-based advice grounded in local documents.
 
 ## 🧠 Agent Architecture
 
@@ -22,7 +22,7 @@ The system consists of three collaborative Agent nodes:
 
 ## 🛠️ Installation & Configuration
 
-### 1\. Prerequisites
+### 1. Prerequisites
 
 Python 3.10+ is required. Using a virtual environment is recommended.
 
@@ -31,15 +31,16 @@ Python 3.10+ is required. Using a virtual environment is recommended.
 pip install -r requirements.txt
 ```
 
-### 2\. Configure API Key
+### 2. Configuration
 
-The system relies on Google Gemini models. Create a `.env` file in the project root or set the environment variable:
+Create a `.env` file in the project root:
 
 ```env
 GOOGLE_API_KEY=your_google_api_key_here
+FRONTEND_PATH=/path/to/smart-stress-ui/dist
 ```
 
-*(Alternatively, you can use a legacy `.API_KEY` file)*
+*(Alternatively, you can use a legacy `.API_KEY` file for the API key)*
 
 ## 🚀 Quick Start
 
@@ -67,9 +68,9 @@ print(f"Current Stress Probability: {state.current_stress_prob}")
 
 The project includes several ready-to-use scripts for verifying core functionality:
 
-  * `python run_api_key_test.py`: Smoke test for the full "Sense -\> Chat -\> Plan" flow.
-  * `python verify_persistence.py`: Verifies state recovery from `smartstress.db` after a restart.
-  * `python test_memory_recall.py`: Simulates resuming a conversation to test context memory.
+* `python run_api_key_test.py`: Smoke test for the full "Sense -> Chat -> Plan" flow.
+* `python verify_persistence.py`: Verifies state recovery from `smartstress.db` after a restart.
+* `python test_memory_recall.py`: Simulates resuming a conversation to test context memory.
 
 ### Starting the Server
 
@@ -79,8 +80,8 @@ The project includes a FastAPI server for REST API access and frontend hosting.
 python server.py
 ```
 
-  * **API Docs**: `http://localhost:8000/docs`
-  * **Frontend**: `http://localhost:8000` (Requires frontend build files)
+* **API Docs**: `http://localhost:8000/docs`
+* **Frontend**: `http://localhost:8000` (Requires `FRONTEND_PATH` in `.env`)
 
 ## 📚 RAG Knowledge Base Management
 

@@ -135,7 +135,16 @@ async def api_continue_session(req: dict):
 # --- Frontend Integration ---
 
 # Path to the external frontend build directory
-FRONTEND_DIST = Path(r"D:\NUS\BMI5101\webui\smart-stress-ui\dist")
+# Path to the external frontend build directory
+# Must be set via FRONTEND_PATH environment variable
+env_frontend_path = os.getenv("FRONTEND_PATH")
+if not env_frontend_path:
+    # Default to a safe relative path or raise warning/error depending on preference
+    # Here we default to a local 'frontend_dist' folder to avoid leaking absolute paths
+    FRONTEND_DIST = Path("frontend_dist")
+    logger.warning("FRONTEND_PATH not set in .env. Defaulting to ./frontend_dist")
+else:
+    FRONTEND_DIST = Path(env_frontend_path)
 
 # Check if frontend exists
 frontend_available = FRONTEND_DIST.exists() and FRONTEND_DIST.is_dir()
