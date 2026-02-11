@@ -113,4 +113,5 @@ chromadb/
 rag_docs/
 .rag_store/
 Agents_develop_LangGraph.md
+experiments/report/
 
