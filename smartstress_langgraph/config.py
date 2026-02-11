@@ -78,7 +78,7 @@ def _parse_dotenv(path: Path) -> None:
         if not key:
             continue
         value = value.strip().strip("\"'")  # tolerate simple quoting
-        os.environ.setdefault(key, value)
+        os.environ[key] = value
 
 
 def _find_api_key_file() -> Optional[Path]:
@@ -124,7 +124,12 @@ def load_google_api_key() -> str:
         If GOOGLE_API_KEY env var is set, it is used directly.
     """
     _initialise_env_files()
-
+    
+    # We prioritize .env values if they were just loaded into os.environ
+    # Note: _initialise_env_files calls _parse_dotenv which uses setdefault.
+    # To truly prioritize .env, we should parse it again or change setdefault logic.
+    # Let's check environment variable first, but give a hint if .env is different.
+    
     env_key = os.getenv("GOOGLE_API_KEY")
     if env_key:
         return env_key.strip()

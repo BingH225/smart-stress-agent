@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Iterable, List
 
 from .schemas import RagDocument
-from .vector_store import VectorStore, get_default_vector_store
+from .tidb_vector_store import TiDBVectorStore, get_tidb_vector_store
 
 
 def _read_text_file(path: Path) -> str:
@@ -43,13 +43,13 @@ def load_documents_from_folder(folder_path: str) -> List[RagDocument]:
 
 def build_or_update_index(
     docs: Iterable[RagDocument],
-    store: VectorStore | None = None,
+    store: TiDBVectorStore | None = None,
 ) -> int:
     """
     Add documents to the vector store and return the number of ingested docs.
     """
     materialized = list(docs)
-    vs = store or get_default_vector_store()
+    vs = store or get_tidb_vector_store()
     if materialized:
         vs.add_documents(materialized)
     return len(materialized)

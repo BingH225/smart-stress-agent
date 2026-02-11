@@ -1,0 +1,152 @@
+[
+  {
+    "id": "q001",
+    "category": "depression",
+    "query": "I've been feeling really down lately and I don't know what to do. How can I cope with depression?",
+    "expected_topics": ["depression", "coping_strategies", "mental_health"]
+  },
+  {
+    "id": "q002",
+    "category": "anxiety",
+    "query": "I get extremely anxious before exams and presentations. What techniques can help me manage this anxiety?",
+    "expected_topics": ["anxiety", "stress_management", "performance_anxiety"]
+  },
+  {
+    "id": "q003",
+    "category": "grief",
+    "query": "I lost someone close to me recently. How do I deal with grief and move forward?",
+    "expected_topics": ["grief", "loss", "bereavement"]
+  },
+  {
+    "id": "q004",
+    "category": "relationship",
+    "query": "My partner and I keep arguing about small things. How can we improve our communication?",
+    "expected_topics": ["relationships", "communication", "conflict_resolution"]
+  },
+  {
+    "id": "q005",
+    "category": "self_esteem",
+    "query": "I constantly feel like I'm not good enough. How can I build my self-confidence?",
+    "expected_topics": ["self_esteem", "confidence", "self_worth"]
+  },
+  {
+    "id": "q006",
+    "category": "stress",
+    "query": "Work has been overwhelming and I can't seem to relax. What are some effective stress relief methods?",
+    "expected_topics": ["work_stress", "relaxation", "burnout"]
+  },
+  {
+    "id": "q007",
+    "category": "social_anxiety",
+    "query": "I feel very uncomfortable in social situations and avoid gatherings. How can I overcome this?",
+    "expected_topics": ["social_anxiety", "social_skills", "isolation"]
+  },
+  {
+    "id": "q008",
+    "category": "family",
+    "query": "My parents don't understand me and we constantly clash. How can I improve my relationship with them?",
+    "expected_topics": ["family_conflict", "parent_child_relationship", "communication"]
+  },
+  {
+    "id": "q009",
+    "category": "trauma",
+    "query": "I experienced something traumatic and it keeps affecting my daily life. Where should I start healing?",
+    "expected_topics": ["trauma", "ptsd", "recovery"]
+  },
+  {
+    "id": "q010",
+    "category": "anger",
+    "query": "I get angry very easily and sometimes I say things I regret. How can I control my anger better?",
+    "expected_topics": ["anger_management", "emotional_regulation", "impulse_control"]
+  },
+  {
+    "id": "q011",
+    "category": "loneliness",
+    "query": "I feel lonely even when I'm around people. How can I form meaningful connections?",
+    "expected_topics": ["loneliness", "connection", "friendships"]
+  },
+  {
+    "id": "q012",
+    "category": "perfectionism",
+    "query": "I'm extremely hard on myself and nothing I do feels good enough. Is this perfectionism hurting me?",
+    "expected_topics": ["perfectionism", "self_criticism", "achievement"]
+  },
+  {
+    "id": "q013",
+    "category": "sleep",
+    "query": "I can't sleep at night because my mind races with worries. How can I improve my sleep?",
+    "expected_topics": ["insomnia", "sleep_hygiene", "worry"]
+  },
+  {
+    "id": "q014",
+    "category": "identity",
+    "query": "I'm confused about who I am and what I want in life. How do I find my identity?",
+    "expected_topics": ["identity", "self_discovery", "purpose"]
+  },
+  {
+    "id": "q015",
+    "category": "addiction",
+    "query": "I think I might have a drinking problem but I'm not sure how to stop. What should I do?",
+    "expected_topics": ["addiction", "substance_abuse", "recovery"]
+  },
+  {
+    "id": "q016",
+    "category": "panic",
+    "query": "I sometimes have sudden panic attacks where I can't breathe. How can I handle these episodes?",
+    "expected_topics": ["panic_attacks", "anxiety", "coping_techniques"]
+  },
+  {
+    "id": "q017",
+    "category": "body_image",
+    "query": "I hate how I look and it affects my confidence. How can I improve my body image?",
+    "expected_topics": ["body_image", "self_acceptance", "confidence"]
+  },
+  {
+    "id": "q018",
+    "category": "motivation",
+    "query": "I've lost all motivation to do anything, even things I used to enjoy. How can I get it back?",
+    "expected_topics": ["motivation", "anhedonia", "depression"]
+  },
+  {
+    "id": "q019",
+    "category": "boundaries",
+    "query": "I have trouble saying no to people and end up feeling drained. How do I set better boundaries?",
+    "expected_topics": ["boundaries", "assertiveness", "self_care"]
+  },
+  {
+    "id": "q020",
+    "category": "forgiveness",
+    "query": "Someone hurt me badly and I can't let go of the resentment. Should I forgive them?",
+    "expected_topics": ["forgiveness", "resentment", "healing"]
+  },
+  {
+    "id": "q021",
+    "category": "career_stress",
+    "query": "I feel stuck in my career and don't know what direction to take. This uncertainty stresses me out.",
+    "expected_topics": ["career", "uncertainty", "decision_making"]
+  },
+  {
+    "id": "q022",
+    "category": "trust",
+    "query": "I've been betrayed before and now I have trouble trusting anyone. How can I rebuild trust?",
+    "expected_topics": ["trust_issues", "betrayal", "relationships"]
+  },
+  {
+    "id": "q023",
+    "category": "comparison",
+    "query": "I constantly compare myself to others on social media and feel inadequate. How do I stop?",
+    "expected_topics": ["social_comparison", "social_media", "self_worth"]
+  },
+  {
+    "id": "q024",
+    "category": "guilt",
+    "query": "I feel guilty about things I've done in the past and can't move on. How do I cope with guilt?",
+    "expected_topics": ["guilt", "self_forgiveness", "regret"]
+  },
+  {
+    "id": "q025",
+    "category": "burnout",
+    "query": "I'm completely burned out from work and personal responsibilities. How can I recover?",
+    "expected_topics": ["burnout", "exhaustion", "recovery"]
+  }
+]
