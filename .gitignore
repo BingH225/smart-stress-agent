@@ -112,6 +112,6 @@ vectorstore/
 chromadb/
 rag_docs/
 .rag_store/
-Agents_develop_LangGraph.md
+smoke_test.py
 experiments/report/
 

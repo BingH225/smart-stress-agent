@@ -108,7 +108,7 @@ def mind_care_node(state: SmartStressState) -> Dict[str, Any]:
         )
         return updates
 
-    # Scenario A-1: new human message that might describe a stressor
+    # Scenario A-1: Determine the latest user message for processing
     history = state.get("conversation_history", [])
     latest_human: Optional[HumanMessage] = None
     for msg in reversed(history):
@@ -116,8 +116,86 @@ def mind_care_node(state: SmartStressState) -> Dict[str, Any]:
             latest_human = msg
             break
 
+    # Scenario D: standalone conversational response (text-only, no high stress)
+    # When user sends a message but there's no sensor-driven high stress,
+    # generate a RAG-enhanced empathetic response as a mental health assistant.
+    # This takes priority over stressor extraction to provide a proper reply.
+    current_stress_prob = float(state.get("current_stress_prob", 0.0))
     if (
         latest_human
+        and not state.get("current_stressor")
+        and not state.get("suggested_action")
+        and not state.get("awaiting_human_confirmation")
+        and current_stress_prob <= 0.9
+        and len(latest_human.content.strip()) >= 6
+        and not _looks_like_confirmation(latest_human.content)
+    ):
+        user_query = latest_human.content.strip()
+        use_rag = state.get("use_rag", True)  # Default to True
+
+        # Retrieve RAG context if enabled
+        rag_snippets = []
+        if use_rag:
+            try:
+                rag_snippets = retrieve_context(user_query, k=3)
+            except Exception as exc:
+                append_error(state, f"MindCare RAG retrieval failure: {exc}")
+
+        # Build system prompt with optional RAG context
+        system_prompt = MIND_CARE_SYSTEM_PROMPT
+        if rag_snippets:
+            system_prompt += (
+                "\n\nHere is some relevant professional guidance you can draw on "
+                "(use it where appropriate, but do not copy verbatim):\n\n"
+                + "\n---\n".join(rag_snippets)
+            )
+
+        # Build conversation messages from history
+        chat_messages = []
+        for msg in state.get("conversation_history", []):
+            if isinstance(msg, HumanMessage):
+                chat_messages.append({"role": "user", "content": msg.content})
+            elif isinstance(msg, AIMessage):
+                chat_messages.append({"role": "assistant", "content": msg.content})
+
+        # Ensure the latest user message is included
+        if not chat_messages or chat_messages[-1].get("content") != user_query:
+            chat_messages.append({"role": "user", "content": user_query})
+
+        try:
+            reply = generate_chat(
+                messages=chat_messages,
+                system_prompt=system_prompt,
+            ).strip()
+        except Exception as exc:  # noqa: BLE001
+            append_error(state, f"MindCare LLM failure: {exc}")
+            reply = (
+                "Thank you for sharing. I hear you, and what you're feeling is valid. "
+                "Would you like to tell me more about what's been going on?"
+            )
+
+        if reply:
+            history = list(state.get("conversation_history", []))
+            history.append(AIMessage(content=reply))
+            updates.update(
+                {
+                    "conversation_history": history,
+                    "rag_context": rag_snippets,
+                }
+            )
+            append_audit_event(
+                state,
+                node_name="mind_care",
+                summary="Generated RAG-enhanced conversational response" if rag_snippets else "Generated conversational response (no RAG)",
+                details={"use_rag": use_rag, "rag_snippets_count": len(rag_snippets)},
+            )
+            return updates
+
+    # Scenario A-1: high stress + new human message that might describe a stressor
+    # Only extract stressor when sensor data indicates high stress
+    if (
+        latest_human
+        and current_stress_prob > 0.9
         and not state.get("current_stressor")
         and not state.get("awaiting_human_confirmation")
         and not state.get("suggested_action")
@@ -135,8 +213,7 @@ def mind_care_node(state: SmartStressState) -> Dict[str, Any]:
             )
             return updates
 
-    # Scenario A: high stress, unknown stressor
-    current_stress_prob = float(state.get("current_stress_prob", 0.0))
+    # Scenario A: high stress, unknown stressor (sensor-driven, no user message)
     if current_stress_prob > 0.9 and not state.get("current_stressor"):
         # Retrieve psychoeducational context (RAG)
         rag_snippets = retrieve_context(
@@ -192,6 +269,5 @@ def mind_care_node(state: SmartStressState) -> Dict[str, Any]:
         summary="No-op (no new dialogue needed)",
     )
     return updates
-
 
 

@@ -36,7 +36,11 @@ class TiDBVectorStore:
             'user': os.getenv('DB_USERNAME', '').strip("'\""),
             'password': os.getenv('DB_PASSWORD', '').strip("'\""),
             'database': os.getenv('DB_DATABASE', 'test'),
-            'ssl_disabled': False
+            'ssl_disabled': False,
+            'ssl_verify_cert': False,
+            'ssl_verify_identity': False,
+            'connection_timeout': 10,
+            'use_pure': True,  # Use pure Python connector to avoid C extension segfaults
         }
         
         self.connection = None
@@ -228,6 +232,6 @@ def get_tidb_vector_store() -> TiDBVectorStore:
     Get a TiDB-based vector store instance.
     
     Returns:
-        TiDBVectorStore instance
+        TiDBVectorStore instance, or raises on connection failure
     """
     return TiDBVectorStore()

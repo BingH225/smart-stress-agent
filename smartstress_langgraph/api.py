@@ -25,6 +25,7 @@ def _blank_state(user_id: str, session_id: str) -> SmartStressState:
         "stress_timestamps": [],
         "conversation_history": [],
         "rag_context": [],
+        "use_rag": True,
         "user_preferences": {},
         "awaiting_human_confirmation": False,
         "error_log": [],

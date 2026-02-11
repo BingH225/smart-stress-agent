@@ -19,8 +19,7 @@ import json
 from datetime import datetime
 from typing import Dict, List, Any
 
-from smartstress_langgraph.api import start_monitoring_session
-from smartstress_langgraph.rag.tidb_vector_store import get_tidb_vector_store
+from smartstress_langgraph.api import start_monitoring_session, continue_session
 
 # Import config from experiments directory
 import importlib.util
@@ -38,41 +37,11 @@ def load_test_queries(queries_file: str) -> List[Dict[str, Any]]:
     with open(queries_file, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-
-def get_rag_context(query: str, k: int = 3, tags: List[str] = None) -> tuple[str, List[Dict]]:
-    """
-    Retrieve relevant documents from RAG for a query.
-    
-    Returns:
-        (context_text, retrieved_docs)
-    """
-    if k == 0:
-        return "", []
-    
-    vs = get_tidb_vector_store()
-    results = vs.similarity_search(query, k=k)
-    vs.close()
-    
-    # Format context for injection
-    context_parts = []
-    retrieved_docs = []
-    
-    for i, (doc, score) in enumerate(results, 1):
-        context_parts.append(f"[Reference {i}]:\n{doc.content}\n")
-        retrieved_docs.append({
-            "rank": i,
-            "similarity": float(score),
-            "source": doc.source,
-            "content": doc.content[:200] + "..." if len(doc.content) > 200 else doc.content
-        })
-    
-    context_text = "\n".join(context_parts)
-    return context_text, retrieved_docs
-
-
 def run_single_test(query_data: Dict[str, Any], group_config, session_id: str = None) -> Dict[str, Any]:
     """
     Run a single test query through the specified group.
+    
+    The agent handles RAG internally based on the use_rag state field.
     
     Returns:
         Test result dictionary
@@ -80,30 +49,7 @@ def run_single_test(query_data: Dict[str, Any], group_config, session_id: str = 
     query = query_data["query"]
     query_id = query_data["id"]
     
-    print(f"  Processing query {query_id} with {group_config.group_name} group...")
-    
-    # Get RAG context if enabled
-    context_text = ""
-    retrieved_docs = []
-    
-    if group_config.use_rag:
-        context_text, retrieved_docs = get_rag_context(
-            query,
-            k=group_config.rag_k,
-            tags=group_config.rag_tags
-        )
-    
-    # Create augmented query with context for experimental group
-    if context_text:
-        augmented_query = f"""Here is some professional guidance that may be relevant:
-
-{context_text}
-
-User query: {query}
-
-Please provide a helpful, empathetic response drawing on the professional guidance above where appropriate."""
-    else:
-        augmented_query = query
+    print(f"  Processing query {query_id} with {group_config.group_name} group (RAG={group_config.use_rag})...")
     
     # Start agent session
     if not session_id:
@@ -113,7 +59,7 @@ Please provide a helpful, empathetic response drawing on the professional guidan
     from smartstress_langgraph.io_models import StartSessionRequest, UserInfo, ContinueSessionRequest, SessionHandleModel, ChatMessage
     
     try:
-        # Start session first (without initial message)
+        # Start session
         request = StartSessionRequest(
             user=UserInfo(
                 user_id=f"ab_test_user",
@@ -123,14 +69,35 @@ Please provide a helpful, empathetic response drawing on the professional guidan
         
         handle, _ = start_monitoring_session(request)
         
-        # Then continue with the user message
+        # Override the use_rag flag in state based on group config
+        from smartstress_langgraph.api import APP, _load_cached_state
+        from smartstress_langgraph.state import SessionHandle
+        
+        sh = handle.to_handle()
+        cached_state = _load_cached_state(sh)
+        cached_state["use_rag"] = group_config.use_rag
+        
+        # Save the updated state by re-invoking with the use_rag flag
+        # We do this by continuing the session with the user message
         continue_request = ContinueSessionRequest(
             session_handle=handle,
-            user_message=ChatMessage(role="user", content=augmented_query)
+            user_message=ChatMessage(role="user", content=query)
         )
         
-        from smartstress_langgraph.api import continue_session
-        _, state_view = continue_session(continue_request)
+        # Temporarily patch the state to include use_rag
+        from smartstress_langgraph import api as api_module
+        original_load = api_module._load_cached_state
+        
+        def patched_load(h):
+            s = original_load(h)
+            s["use_rag"] = group_config.use_rag
+            return s
+        
+        api_module._load_cached_state = patched_load
+        try:
+            _, state_view = continue_session(continue_request)
+        finally:
+            api_module._load_cached_state = original_load
         
         # Extract response
         agent_response = ""
@@ -142,6 +109,8 @@ Please provide a helpful, empathetic response drawing on the professional guidan
                     
     except Exception as e:
         print(f"    Warning: Agent error - {e}")
+        import traceback
+        traceback.print_exc()
         agent_response = f"[Agent Error: {str(e)}]"
     
     return {
@@ -151,8 +120,6 @@ Please provide a helpful, empathetic response drawing on the professional guidan
         "group": group_config.group_name,
         "use_rag": group_config.use_rag,
         "rag_k": group_config.rag_k,
-        "retrieved_docs": retrieved_docs,
-        "context_used": context_text if group_config.use_rag else None,
         "response": agent_response,
         "session_id": session_id,
         "timestamp": datetime.now().isoformat()

@@ -61,22 +61,40 @@ def evaluate_response(query: str, response: str, context: str = "", query_id: st
             generation_config={"temperature": 0.1}  # Lower temperature for consistency
         )
         
-        # Extract JSON from response
-        json_match = re.search(r'\{[^{}]*\}', judge_response, re.DOTALL)
+        # Extract JSON from response - handle markdown fences and nested content
+        raw = judge_response.strip()
+        # Strip markdown code fences (```json ... ```)
+        fence_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', raw, re.DOTALL)
+        if fence_match:
+            raw = fence_match.group(1).strip()
+        
+        # Try to find JSON object with potential nested content
+        json_match = re.search(r'\{.*\}', raw, re.DOTALL)
         if json_match:
-            evaluation = json.loads(json_match.group())
+            try:
+                evaluation = json.loads(json_match.group())
+                print(" ✓")
+                return evaluation
+            except json.JSONDecodeError:
+                pass
+        
+        # Fallback: try parsing the entire stripped response
+        try:
+            evaluation = json.loads(raw)
             print(" ✓")
             return evaluation
-        else:
-            print(" ✗ (JSON parse error)")
-            return {
-                "groundedness": 0,
-                "stressor_identification": 0,
-                "safety_compliance": 0,
-                "response_quality": 0,
-                "justification": "Failed to parse judge response",
-                "raw_response": judge_response
-            }
+        except json.JSONDecodeError:
+            pass
+        
+        print(" ✗ (JSON parse error)")
+        return {
+            "groundedness": 0,
+            "stressor_identification": 0,
+            "safety_compliance": 0,
+            "response_quality": 0,
+            "justification": "Failed to parse judge response",
+            "raw_response": judge_response[:500]
+        }
     
     except Exception as e:
         print(f" ✗ (Error: {e})")
@@ -143,8 +161,8 @@ def evaluate_all_results(results_file: str, output_file: str = None):
         
         # Add 15-second delay to avoid API quota issues (except for last one)
         if i < len(results):
-            print(f"    Waiting 5s before next evaluation...")
-            time.sleep(5)
+            print(f"    Waiting 2s before next evaluation...")
+            time.sleep(2)
     
     # Save evaluated results to report directory
     if not output_file:

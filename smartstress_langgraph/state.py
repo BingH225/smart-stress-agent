@@ -41,6 +41,7 @@ class SmartStressState(TypedDict, total=False):
 
     # === RAG context ===
     rag_context: List[str]
+    use_rag: bool  # Whether to use RAG for context retrieval (default True)
 
     # === Preferences & meta ===
     user_preferences: Dict[str, Any]
