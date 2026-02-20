@@ -1,16 +1,18 @@
 """
-Report Generator for A/B Test Results
+Report Generator for A/B Test Results (Similarity-Only Evaluation)
 
-Generates a comprehensive comparison report with statistics and visualizations.
+Compares Control vs Experimental group similarity scores and
+generates a Markdown report.
 """
 
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Any
 from statistics import mean, stdev
+from typing import Dict, List, Any, Optional, Tuple
 
 
 def load_evaluated_results(results_file: str) -> List[Dict[str, Any]]:
@@ -20,227 +22,255 @@ def load_evaluated_results(results_file: str) -> List[Dict[str, Any]]:
 
 
 def calculate_group_statistics(results: List[Dict[str, Any]], group_name: str) -> Dict[str, Any]:
-    """Calculate statistics for a test group."""
+    """Calculate similarity statistics for a test group."""
     group_results = [r for r in results if r.get("group") == group_name]
-    
+
     if not group_results:
         return {"error": "No results for this group"}
-    
-    # Extract scores
-    scores = {metric: [] for metric in ["groundedness", "stressor_identification", "safety_compliance", "response_quality"]}
-    
+
+    similarities = []
     for result in group_results:
-        eval_data = result.get("evaluation")
-        if eval_data and isinstance(eval_data, dict):
-            for metric in scores.keys():
-                score = eval_data.get(metric)
-                if isinstance(score, (int, float)) and score > 0:
-                    scores[metric].append(score)
-    
-    # Calculate statistics
-    stats = {
-        "n": len(group_results),
-        "metrics": {}
+        ev = result.get("evaluation") or {}
+        sim = ev.get("ground_truth_similarity")
+        if isinstance(sim, float) and sim > 0:
+            similarities.append(sim)
+
+    n = len(group_results)
+    return {
+        "n": n,
+        "n_valid": len(similarities),
+        "similarity": {
+            "mean":  round(mean(similarities), 4)  if similarities else 0.0,
+            "stdev": round(stdev(similarities), 4) if len(similarities) > 1 else 0.0,
+            "min":   round(min(similarities), 4)   if similarities else 0.0,
+            "max":   round(max(similarities), 4)   if similarities else 0.0,
+        },
+        # Per-category breakdown
+        "by_category": _category_means(group_results),
+        # Raw scores list (for t-test)
+        "raw_scores": similarities,
     }
-    
-    for metric, values in scores.items():
-        if values:
-            stats["metrics"][metric] = {
-                "mean": round(mean(values), 2),
-                "stdev": round(stdev(values), 2) if len(values) > 1 else 0,
-                "min": min(values),
-                "max": max(values),
-                "n_valid": len(values)
-            }
+
+
+def _category_means(group_results: List[Dict[str, Any]]) -> Dict[str, float]:
+    """Return mean similarity per category."""
+    cat_scores: Dict[str, List[float]] = {}
+    for r in group_results:
+        cat = r.get("category", "unknown")
+        ev  = r.get("evaluation") or {}
+        sim = ev.get("ground_truth_similarity")
+        if isinstance(sim, float):
+            cat_scores.setdefault(cat, []).append(sim)
+    return {cat: round(mean(vals), 4) for cat, vals in sorted(cat_scores.items())}
+
+
+def run_ttest(
+    scores_a: List[float],
+    scores_b: List[float],
+) -> Tuple[Optional[float], Optional[float], str]:
+    """
+    Run Welch's independent-samples t-test (unequal variance assumed).
+
+    Returns:
+        (t_stat, p_value, interpretation_string)
+    """
+    try:
+        from scipy import stats
+
+        if len(scores_a) < 2 or len(scores_b) < 2:
+            return None, None, "Insufficient data for t-test"
+
+        t_stat, p_value = stats.ttest_ind(scores_a, scores_b, equal_var=False)
+
+        if p_value < 0.001:
+            sig = "highly significant (p < 0.001)"
+        elif p_value < 0.01:
+            sig = "significant (p < 0.01)"
+        elif p_value < 0.05:
+            sig = "significant (p < 0.05)"
+        elif p_value < 0.10:
+            sig = "marginally significant (p < 0.10)"
         else:
-            stats["metrics"][metric] = {
-                "mean": 0,
-                "stdev": 0,
-                "min": 0,
-                "max": 0,
-                "n_valid": 0
-            }
-    
-    return stats
+            sig = "not significant (p ≥ 0.10)"
+
+        return float(t_stat), float(p_value), sig
+    except ImportError:
+        return None, None, "scipy not installed — t-test skipped"
+    except Exception as e:
+        return None, None, f"t-test error: {e}"
 
 
 def generate_markdown_report(results_file: str, output_file: str = None) -> str:
-    """
-    Generate a comprehensive Markdown report.
-    
-    Returns:
-        Path to generated report
-    """
+    """Generate a Markdown similarity comparison report with t-test."""
     print("=" * 70)
-    print("Generating Comparison Report")
+    print("Generating Similarity Comparison Report")
     print("=" * 70)
-    
-    # Load results
-    print(f"\nLoading evaluated results from {results_file}...")
+
+    print(f"\nLoading: {results_file}")
     results = load_evaluated_results(results_file)
     print(f"Loaded {len(results)} evaluated results")
-    
-    # Calculate statistics for both groups
-    control_stats = calculate_group_statistics(results, "Control")
-    experimental_stats = calculate_group_statistics(results, "Experimental")
-    
-    # Generate report
-    report_lines = []
-    report_lines.append("# CounselChat RAG Enhancement - A/B Test Report\n")
-    report_lines.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-    report_lines.append("---\n")
-    
-    # Executive Summary
-    report_lines.append("## Executive Summary\n")
-    report_lines.append("This report presents the results of an A/B test comparing the SmartStress Agent's performance ")
-    report_lines.append("with and without CounselChat RAG enhancement.\n")
-    
-    control_n = control_stats.get("n", 0)
-    experimental_n = experimental_stats.get("n", 0)
-    
-    report_lines.append(f"- **Control Group (No RAG):** {control_n} queries tested\n")
-    report_lines.append(f"- **Experimental Group (CounselChat RAG, k=3):** {experimental_n} queries tested\n")
-    report_lines.append(f"- **Total Test Queries:** {control_n} unique scenarios\n")
-    report_lines.append("\n---\n")
-    
-    # Metric Comparison Table
-    report_lines.append("## Performance Comparison\n")
-    report_lines.append("### Overall Metrics (Mean Scores, 1-5 scale)\n")
-    report_lines.append("| Metric | Control (No RAG) | Experimental (With RAG) | Improvement |\n")
-    report_lines.append("|--------|------------------|-------------------------|-------------|\n")
-    
-    metrics_display = {
-        "groundedness": "Groundedness",
-        "stressor_identification": "Stressor Identification",
-        "safety_compliance": "Safety Compliance",
-        "response_quality": "Response Quality"
+
+    ctrl = calculate_group_statistics(results, "Control")
+    exp  = calculate_group_statistics(results, "Experimental")
+
+    ctrl_mean = ctrl["similarity"]["mean"]
+    exp_mean  = exp["similarity"]["mean"]
+    improvement = ((exp_mean - ctrl_mean) / ctrl_mean * 100) if ctrl_mean > 0 else 0.0
+
+    # T-test
+    t_stat, p_value, significance = run_ttest(
+        ctrl["raw_scores"], exp["raw_scores"]
+    )
+
+    lines = []
+
+    # ── Header ──────────────────────────────────────────────────────────────
+    lines += [
+        "# CounselChat RAG Enhancement — A/B Test Report\n\n",
+        f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n",
+        "---\n\n",
+    ]
+
+    # ── Executive Summary ───────────────────────────────────────────────────
+    lines += ["## Executive Summary\n\n"]
+    lines += [
+        "Comparison of the SmartStress Agent **with** and **without** "
+        "CounselChat RAG enhancement, measured by TF-IDF cosine similarity "
+        "to ground-truth expert answers.\n\n",
+        f"| | Queries | Valid Scores | Mean Similarity |\n",
+        f"|---|---|---|---|\n",
+        f"| **Control (No RAG)** | {ctrl['n']} | {ctrl['n_valid']} | {ctrl_mean:.4f} |\n",
+        f"| **Experimental (RAG k=3)** | {exp['n']} | {exp['n_valid']} | {exp_mean:.4f} |\n",
+        "\n",
+    ]
+
+    # T-test summary table in executive summary
+    if t_stat is not None:
+        lines += [
+            "### Statistical Significance (Welch's t-test)\n\n",
+            f"| t-statistic | p-value | Result |\n",
+            f"|---|---|---|\n",
+            f"| {t_stat:.4f} | {p_value:.4f} | {significance} |\n",
+            "\n",
+        ]
+    lines += ["\n---\n\n"]
+
+    # ── Overall Comparison ──────────────────────────────────────────────────
+    lines += ["## Overall Similarity Scores\n\n"]
+    lines += [
+        "| Metric | Control | Experimental | Δ |\n",
+        "|--------|---------|--------------|---|\n",
+    ]
+    for stat in ["mean", "stdev", "min", "max"]:
+        c_val = ctrl["similarity"][stat]
+        e_val = exp["similarity"][stat]
+        delta = e_val - c_val
+        delta_str = f"+{delta:.4f}" if delta >= 0 else f"{delta:.4f}"
+        lines.append(f"| {stat.capitalize()} | {c_val:.4f} | {e_val:.4f} | {delta_str} |\n")
+    lines += ["\n"]
+
+    pct_str = f"+{improvement:.1f}%" if improvement >= 0 else f"{improvement:.1f}%"
+    lines += [f"**Mean similarity change (RAG vs No-RAG):** {pct_str}\n\n", "---\n\n"]
+
+    # ── Per-Category Breakdown ──────────────────────────────────────────────
+    all_cats = sorted(set(list(ctrl["by_category"]) + list(exp["by_category"])))
+    if all_cats:
+        lines += ["## Per-Category Similarity\n\n"]
+        lines += ["| Category | Control | Experimental | Δ |\n", "|---|---|---|---|\n"]
+        for cat in all_cats:
+            c = ctrl["by_category"].get(cat, 0.0)
+            e = exp["by_category"].get(cat, 0.0)
+            d = e - c
+            d_str = f"+{d:.4f}" if d >= 0 else f"{d:.4f}"
+            lines.append(f"| {cat} | {c:.4f} | {e:.4f} | {d_str} |\n")
+        lines += ["\n---\n\n"]
+
+    # ── Key Findings ────────────────────────────────────────────────────────
+    lines += ["## Key Findings\n\n"]
+    if improvement > 5:
+        lines += [f"✅ **Positive Impact:** RAG improves response similarity by {improvement:.1f}%.\n\n"]
+    elif improvement < -5:
+        lines += [f"⚠️ **Negative Impact:** RAG decreases similarity by {abs(improvement):.1f}%.\n\n"]
+    else:
+        lines += [f"ℹ️ **Neutral Impact:** Minimal change ({improvement:+.1f}%).\n\n"]
+
+    # T-test finding
+    if t_stat is not None:
+        sig_symbol = "✅" if p_value < 0.05 else "❌"
+        lines += [
+            f"{sig_symbol} **Statistical Test:** Welch's t-test — "
+            f"t = {t_stat:.4f}, p = {p_value:.4f} — **{significance}**\n\n",
+        ]
+
+    # Best/worst categories for RAG
+    cat_diffs = {
+        cat: (exp["by_category"].get(cat, 0.0) - ctrl["by_category"].get(cat, 0.0))
+        for cat in all_cats
     }
-    
-    total_improvement = 0
-    metric_count = 0
-    
-    for metric_key, metric_name in metrics_display.items():
-        control_mean = control_stats.get("metrics", {}).get(metric_key, {}).get("mean", 0)
-        exp_mean = experimental_stats.get("metrics", {}).get(metric_key, {}).get("mean", 0)
-        
-        if control_mean > 0:
-            improvement = ((exp_mean - control_mean) / control_mean) * 100
-            total_improvement += improvement
-            metric_count += 1
-        else:
-            improvement = 0
-        
-        improvement_str = f"+{improvement:.1f}%" if improvement > 0 else f"{improvement:.1f}%"
-        if improvement > 5:
-            improvement_str = f"✓ {improvement_str}"
-        
-        report_lines.append(f"| {metric_name} | {control_mean:.2f} | {exp_mean:.2f} | {improvement_str} |\n")
-    
-    avg_improvement = total_improvement / metric_count if metric_count > 0 else 0
-    report_lines.append(f"\n**Average Improvement:** {avg_improvement:+.1f}%\n")
-    report_lines.append("\n---\n")
-    
-    # Detailed Statistics
-    report_lines.append("## Detailed Statistics\n")
-    
-    for group_name, stats in [("Control", control_stats), ("Experimental", experimental_stats)]:
-        report_lines.append(f"\n### {group_name} Group\n")
-        report_lines.append(f"**Sample Size:** {stats.get('n', 0)}\n\n")
-        report_lines.append("| Metric | Mean | Std Dev | Min | Max |\n")
-        report_lines.append("|--------|------|---------|-----|-----|\n")
-        
-        for metric_key, metric_name in metrics_display.items():
-            m_stats = stats.get("metrics", {}).get(metric_key, {})
-            report_lines.append(
-                f"| {metric_name} | {m_stats.get('mean', 0):.2f} | "
-                f"{m_stats.get('stdev', 0):.2f} | {m_stats.get('min', 0)} | {m_stats.get('max', 0)} |\n"
-            )
-    
-    report_lines.append("\n---\n")
-    
-    # Key Findings
-    report_lines.append("## Key Findings\n")
-    
-    if avg_improvement > 5:
-        report_lines.append(f"✅ **Positive Impact:** The CounselChat RAG enhancement shows an average improvement of {avg_improvement:.1f}% across all metrics.\n\n")
-    elif avg_improvement < -5:
-        report_lines.append(f"⚠️ **Negative Impact:** The CounselChat RAG enhancement shows an average decline of {abs(avg_improvement):.1f}% across all metrics.\n\n")
+    if cat_diffs:
+        best_cat  = max(cat_diffs, key=cat_diffs.get)
+        worst_cat = min(cat_diffs, key=cat_diffs.get)
+        lines += [
+            f"- **Best category for RAG:** `{best_cat}` ({cat_diffs[best_cat]:+.4f})\n",
+            f"- **Worst category for RAG:** `{worst_cat}` ({cat_diffs[worst_cat]:+.4f})\n",
+            "\n",
+        ]
+
+    lines += ["---\n\n"]
+
+    # ── Recommendations ─────────────────────────────────────────────────────
+    lines += ["## Recommendations\n\n"]
+    if improvement > 5:
+        lines += [
+            "1. **Deploy RAG:** Results support production deployment.\n",
+            "2. **Monitor:** Continue tracking similarity scores in production.\n",
+            "3. **Expand Knowledge Base:** Add more high-quality counseling resources.\n",
+        ]
     else:
-        report_lines.append(f"ℹ️ **Neutral Impact:** The CounselChat RAG enhancement shows minimal change ({avg_improvement:.1f}%).\n\n")
-    
-    # Metric-specific findings
-    for metric_key, metric_name in metrics_display.items():
-        control_mean = control_stats.get("metrics", {}).get(metric_key, {}).get("mean", 0)
-        exp_mean = experimental_stats.get("metrics", {}).get(metric_key, {}).get("mean", 0)
-        
-        if control_mean > 0:
-            improvement = ((exp_mean - control_mean) / control_mean) * 100
-            
-            if improvement > 10:
-                report_lines.append(f"- **{metric_name}:** Strong improvement (+{improvement:.1f}%)\n")
-            elif improvement > 5:
-                report_lines.append(f"- **{metric_name}:** Moderate improvement (+{improvement:.1f}%)\n")
-            elif improvement < -5:
-                report_lines.append(f"- **{metric_name}:** Decline ({improvement:.1f}%)\n")
-    
-    report_lines.append("\n---\n")
-    
-    # Recommendations
-    report_lines.append("## Recommendations\n")
-    
-    if avg_improvement > 5:
-        report_lines.append("1. **Deploy RAG Enhancement:** The positive results support deploying the CounselChat RAG system to production.\n")
-        report_lines.append("2. **Monitor Performance:** Continue tracking these metrics in production to ensure sustained improvement.\n")
-        report_lines.append("3. **Expand Knowledge Base:** Consider adding more high-quality counseling resources to further enhance performance.\n")
-    else:
-        report_lines.append("1. **Review RAG Implementation:** Investigate why the RAG enhancement did not show expected improvements.\n")
-        report_lines.append("2. **Refine Retrieval:** Consider adjusting retrieval parameters (k value, similarity threshold, etc.).\n")
-        report_lines.append("3. **Improve Context Integration:** Review how retrieved context is integrated into agent responses.\n")
-    
-    report_lines.append("\n---\n")
-    
-    # Methodology
-    report_lines.append("## Methodology\n")
-    report_lines.append("- **Evaluation Method:** LLM-as-a-judge using Gemini\n")
-    report_lines.append("- **Scoring Scale:** 1-5 for each metric\n")
-    report_lines.append("- **Test Queries:** 25 diverse stress-related scenarios\n")
-    report_lines.append("- **RAG Configuration:** k=3 documents retrieved per query\n")
-    report_lines.append("- **Knowledge Source:** CounselChat dataset (professional mental health Q&A)\n")
-    
-    # Save report
+        lines += [
+            "1. **Review RAG Implementation:** Investigate why improvement is limited.\n",
+            "2. **Tune Retrieval:** Adjust `k` value and similarity thresholds.\n",
+            "3. **Improve Context Integration:** Review prompt template for RAG context.\n",
+        ]
+
+    lines += ["\n---\n\n"]
+
+    # ── Methodology ─────────────────────────────────────────────────────────
+    lines += [
+        "## Methodology\n\n",
+        "- **Evaluation Metric:** TF-IDF cosine similarity (unigrams + bigrams) to expert ground truth\n",
+        "- **Similarity Scale:** 0.0 – 1.0 (higher = more lexically similar to expert answer)\n",
+        "- **Statistical Test:** Welch's independent-samples t-test (unequal variance assumed, two-tailed)\n",
+        f"- **Control Queries:** {ctrl['n']} | **Experimental Queries:** {exp['n']}\n",
+        "- **RAG Configuration:** k=3 documents retrieved per query, CounselChat dataset\n",
+        "- **Test Data Source:** `counselchat-data.csv` (held-out from RAG ingestion)\n",
+    ]
+
+    # ── Save ─────────────────────────────────────────────────────────────────
     if not output_file:
-        # Save to report subdirectory
         report_dir = Path("experiments/report")
         report_dir.mkdir(parents=True, exist_ok=True)
-        base_name = Path(results_file).stem
+        base_name  = Path(results_file).stem
         output_file = str(report_dir / f"{base_name}_report.md")
-    
-    output_path = Path(output_file)
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(''.join(report_lines))
-    
+
+    out = Path(output_file)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("".join(lines), encoding="utf-8")
+
     print(f"\n{'='*70}")
-    print(f"Report Generated!")
-    print(f"Report saved to: {output_path}")
-    print(f"\nAverage Improvement: {avg_improvement:+.1f}%")
+    print(f"Report saved to: {out}")
+    print(f"Mean similarity — Control: {ctrl_mean:.4f} | Experimental: {exp_mean:.4f} | Δ: {pct_str}")
     print(f"{'='*70}")
-    
-    return str(output_path)
+
+    return str(out)
 
 
 def main():
-    """Main entry point."""
-    import sys
-    
     if len(sys.argv) < 2:
-        print("Usage: python generate_report.py <evaluated_results_file.json>")
-        print("\nExample:")
-        print("  python experiments/generate_report.py experiments/ab_test_results_20260210_120000_evaluated.json")
+        print("Usage: python generate_report.py <evaluated_results.json>")
         sys.exit(1)
-    
-    results_file = sys.argv[1]
-    report_file = generate_markdown_report(results_file)
-    print(f"\n📊 View the report at: {report_file}")
+    report = generate_markdown_report(sys.argv[1])
+    print(f"\n📊 Report: {report}")
 
 
 if __name__ == "__main__":

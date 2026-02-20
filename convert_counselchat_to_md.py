@@ -139,6 +139,22 @@ def convert_csv_to_md(
 
 def main():
     """Main conversion process."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Convert CounselChat CSV to Markdown")
+    parser.add_argument(
+        "--csv",
+        type=str,
+        help="Path to specific CSV file to convert (if not provided, converts all CSV files)"
+    )
+    parser.add_argument(
+        "--prefix",
+        type=str,
+        default="cc",
+        help="Prefix for generated filenames (default: cc)"
+    )
+    args = parser.parse_args()
+    
     print("=" * 60)
     print("CounselChat CSV to Markdown Converter")
     print("=" * 60)
@@ -148,10 +164,22 @@ def main():
     rag_docs_dir = base_dir / "rag_docs"
     output_dir = rag_docs_dir / "counselchat"
     
-    csv_files = [
-        (rag_docs_dir / "20220401_counsel_chat.csv", "cc2022"),
-        (rag_docs_dir / "counselchat-data.csv", "ccdata"),
-    ]
+    # Determine which CSV files to process
+    if args.csv:
+        # Single CSV file specified
+        csv_path = Path(args.csv)
+        if not csv_path.is_absolute():
+            csv_path = base_dir / csv_path
+        
+        csv_files = [(csv_path, args.prefix)]
+        print(f"\nProcessing single CSV file: {csv_path}")
+    else:
+        # Process all CSV files (default behavior)
+        csv_files = [
+            (rag_docs_dir / "20220401_counsel_chat.csv", "cc2022"),
+            (rag_docs_dir / "counselchat-data.csv", "ccdata"),
+        ]
+        print("\nProcessing all CSV files in rag_docs/")
     
     # Track duplicates across files
     seen_questions: Set[str] = set()

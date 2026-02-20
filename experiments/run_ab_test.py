@@ -121,6 +121,7 @@ def run_single_test(query_data: Dict[str, Any], group_config, session_id: str = 
         "use_rag": group_config.use_rag,
         "rag_k": group_config.rag_k,
         "response": agent_response,
+        "ground_truth": query_data.get("ground_truth", ""),  # Include ground truth
         "session_id": session_id,
         "timestamp": datetime.now().isoformat()
     }
