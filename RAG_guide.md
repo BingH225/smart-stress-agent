@@ -1,63 +1,53 @@
-## SmartStress RAG Guide (Local Vector Store)
+## SmartStress RAG Guide (TiDB Vector Store)
 
-This guide explains how to ingest existing documents into the local vector
-database and surface them inside the MindCare dialogue flow.
+This guide explains how to ingest local documents into the TiDB-backed vector
+store and use retrieval in the MindCare dialogue flow.
 
 ### 1. Prepare Documents
 
-- Put all Markdown/TXT sources you want to index under a folder such as
-  `rag_docs/` at the project root.
-- The reference implementation currently supports `.md` and `.txt`. Extend the
-  ingestion script if you need PDF or other formats.
+- Put Markdown/TXT sources under a folder such as `rag_docs/` at project root.
+- Current ingestion supports `.md` and `.txt` files.
 
-### 2. Configure `GOOGLE_API_KEY`
+### 2. Configure Environment Variables
 
-1. Recommended: store your Google API key in a `.env` file at the project root:
+Create a `.env` file in project root with at least:
 
-   ```text
-   GOOGLE_API_KEY=your_real_key_here
-   ```
+```text
+GOOGLE_API_KEY=your_google_api_key
+DB_HOST=your_tidb_host
+DB_PORT=4000
+DB_USERNAME=your_tidb_user
+DB_PASSWORD=your_tidb_password
+DB_DATABASE=your_tidb_database
+```
 
-2. Alternatively set an environment variable before running the scripts:
-
-   ```bash
-   set GOOGLE_API_KEY=your_real_key_here
-   ```
-
-   The runtime reads from environment variables first, then `.env`, and finally
-   falls back to a legacy `.API_KEY` file if you still keep one around.
+Notes:
+- `GOOGLE_API_KEY` is used for chat + embeddings.
+- TiDB credentials are read by `smartstress_langgraph/rag/tidb_vector_store.py`.
+- Legacy `.API_KEY` is still supported for Google API key only.
 
 ### 3. Install Dependencies
 
-From the project root run:
+From project root:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Key packages:
-
-- `google-generativeai` (Gemini client)
-- `langgraph`
-- `langchain-core`
-- `pydantic`
-- `chromadb`
+Key packages for RAG path:
+- `mysql-connector-python` (TiDB/MySQL protocol)
+- `python-dotenv` (load `.env`)
+- `google-generativeai` and `google-genai` (LLM + embedding clients)
 
 ### 4. Ingest Documents
 
-From the project root:
+CLI example:
 
 ```bash
 python -m smartstress_langgraph.examples.ingest_docs_example rag_docs
 ```
 
-The script will:
-
-- Use `load_documents_from_folder()` to read `.md`/`.txt` files.
-- Create embeddings with `gemini-embedding-001`.
-- Store vectors in the local Chroma database at `smartstress_langgraph/.rag_store`.
-
-You can also ingest programmatically:
+Programmatic example:
 
 ```python
 from smartstress_langgraph import ingest_documents
@@ -66,22 +56,34 @@ stats = ingest_documents("rag_docs", tags=["psychoeducation"])
 print("Ingested docs:", stats)
 ```
 
-### 5. Use RAG During Dialogue
+Ingestion flow:
+- `load_documents_from_folder()` reads `.md/.txt`.
+- `embed_documents()` generates embeddings.
+- `TiDBVectorStore.add_documents()` writes to:
+  - `rag_documents`
+  - `rag_embeddings`
 
-- The MindCare node calls `retrieve_context()` when it needs psychoeducation or
-  scheduling tips. The top-k snippets are appended to the LLM system prompt and
-  saved under `rag_context` so the frontend can display evidence chips with the
-  original sources.
+### 5. Retrieval in Runtime
 
-### 6. Reset the Index
+- `mind_care_node` calls `retrieve_context(query, k=3)` when needed.
+- Retrieval returns top-k snippets with source annotations.
+- Retrieved snippets are appended to prompt context and stored in state
+  field `rag_context`.
 
-- The vector store persists under `smartstress_langgraph/.rag_store`.
-- Delete that folder if you need to rebuild the index from scratch:
+### 6. Reset / Rebuild TiDB Index
 
-```bash
-rm -rf smartstress_langgraph/.rag_store
+To fully rebuild:
+1. Backup important data.
+2. Clear `rag_documents` and `rag_embeddings` tables in TiDB.
+3. Re-run ingestion script.
+
+Example SQL:
+
+```sql
+DELETE FROM rag_embeddings;
+DELETE FROM rag_documents;
 ```
 
-Then re-run the ingestion script.
+Then run ingestion again.
 
 

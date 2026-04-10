@@ -1,0 +1,995 @@
+\documentclass[journal,twoside,web]{ieeecolor}
+\usepackage{generic}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{algorithm,algorithmic}
+\usepackage{textcomp}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage[table]{xcolor}
+
+% headers
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\markboth{\hskip25pc IEEE TRANSACTIONS AND JOURNALS TEMPLATE}
+{Author \MakeLowercase{\textit{et al.}}: Title}
+
+% hyperref 永远最后
+\usepackage[hidelinks]{hyperref}
+
+
+\begin{document}
+
+\title{SmartStress: Bridging Wearable Sensing and Agentic Reasoning for Explainable Mental Health Support}
+
+\author{First A. Author, \IEEEmembership{Fellow, IEEE}, Second B. Author, and Third C. Author Jr., \IEEEmembership{Member, IEEE}
+}
+
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+\begin{IEEEkeywords}
+
+\end{IEEEkeywords}
+
+% ch 1
+\section{Introduction}
+\label{sec:introduction}
+Chronic stress has become a global issue costing billions in annual economic losses worldwide. Diseases caused by stress like cardiovascular disease, anxiety and depression, also add to the burden of public healthcare institutions \cite{gjoreski2016continuous} \cite{iqbal2022stress}. Thus, there is an urgent need for automated tools capable of rapid, real-time detection of stress and able to provide solutions to reduce the workload of healthcare professionals.
+
+Currently there are many consumer-grade wearable devices, such as Empatica E4, that can capture multimodal biomarkers-ranging from Heart Rate Variability (HRV) and Electrodermal Activity (EDA) to skin temperature \cite{schmidt2018introducing}. Using data generated from these devices coupled with Deep Neural Networks (DNNs) technology, some researchers have reported accuracy metrics exceeding 90\% in binary stress classification. However, a critical problem still exists \cite{abd2024deep}. Wearables display raw stress score but rarely offer explanations behind these scores or provide context-aware guidance.
+
+The rise of Large Language Models (LLMs) offers a glimpse of hope. LLM-driven agents can offer high intelligence dialogue with the users \cite{wang2024characteristic}. However, these agents are often not capable of understanding user’s current mental state without explicit text input, thus unable to detect physiological deterioration \cite{qiu2025emoagent}. In the end, users are left with wearables that can sense but cannot speak and LLM agents that can speak but cannot sense.
+
+To bridge this semantic and sensory gap, we introduce \textbf{SmartStress}, a novel framework that integrates wearable sensing with neuro-symbolic agentic reasoning(Fig.\ref{fig:system_overview}). We argue that effective mental health support requires a transition from passive monitoring to active, explainable intervention. Unlike previous approaches that treat sensing and dialogue as separate systems, SmartStress employs a multi-agent architecture to create a closed feedback loop.
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=1\linewidth]{figs/system_overview.png}
+    \caption{The architecture of the SmartStress framework. The system consists of three interconnected components: the DNN-based PhysioSense Agent for real-time stress detection via physiological data (ECG), the LLM-based MindCare Agent for semantic stressor identification and evidence-based empathetic response generation via RAG, and the Meta-Reflective Orchestrator for proactive, human-in-the-loop task intervention and system state management.}
+    \label{fig:system_overview}
+\end{figure*}
+
+The main contributions of this paper can be summarized as follows:
+\begin{enumerate}
+    \item We propose a DNN model enhanced with an attention mechanism to improve representational capacity and predictive performance.
+    \item We introduce a multi-agent mental health support framework consisting of three agents: PhysioSense Agent, MindCare Agent and Meta-Reflective Orchestrator.
+    \item We provide interpretability for both the DNN and LLM components using SHAP and evidence-based explanation methods.
+\end{enumerate}
+\hspace*{\parindent}The rest of this paper is organized as follows: Section ~\ref{sec:related_work} provides an overview of related literatures. Section ~\ref{sec:methods} describes our proposed methods. Section ~\ref{sec:guidelines} presents the experiments and results. Section ~\ref{sec:discussion} provides the performance analysis and discussion. Section ~\ref{sec:conclusion} concludes the paper.
+
+
+% ch 2
+\section{Related Work}
+\label{sec:related_work}
+\subsection{Physiological Computing}
+The field of physiological computing has been evolving throughout the years, from the early simple handcrafted features to the highly complex deep learning models. In the earlier stages, datasets like WESAD still relied on traditional machine learning methods such as Random Forest and Linear Discriminant Analysis (LDA) to extract features like HRV and SCR peaks \cite{schmidt2018introducing}. While these approaches are good, but often failed to deal with complex, non-linear physiological 	patterns \cite{saganowski2022emotion}.
+
+In contrast, recent deep neural network architectures, such as Convolutional Neural Networks (CNNs) and Long Short-Term Memory networks (LSTMs), have demonstrated improved classification performance, with some studies reporting high binary classification accuracy \cite{tanwar2022cnn}. However, these gains introduce the well-documented “black-box” problem. These models tend to produce predictions that users do not understand as it does not come with clear explanations. Thus, there is growing recognition that stress detection systems must combine high performance with explainability to gain clinical trust \cite{qiu2025emoagent}.
+
+\subsection{LLMs in Healthcare}
+At the same time, LLMs and Retrieval-Augmented Generation (RAG) systems have transformed digital mental health support. These systems can provide emotional support and engaging dialogue with the users \cite{che2017interpretable} \cite{van2023providing}.
+
+However, these systems still operate in “sensory vacuum”, meaning they depends a lot on user’s inputs to provide a response as they do not have access to real-time physiological data. Sometimes this might be too late as the users have flagged their distress and then the system will provide responses. Without objective bio-signal grounding, LLM-based systems may struggle to accurately assess a user’s true mental state \cite{de2024chatbots}. Although RAG allows retrieval of clinical knowledge, it does not yet enable retrieval or interpretation of the user’s current physiological condition \cite{toy2025advantages}. This limits the depth and reliability of their responses.
+
+\subsection{Agentic AI}
+Agentic AI introduces multi-agent architectures capable of planning, reasoning, and role-based interaction. These frameworks including those involving evaluation and safety agents such as \textbf{EmoAgent}, have shown promise in modelling cognitive processes and mitigating mental health risks using structured reasoning approaches like Cognitive Behavioral Therapy (CBT)-based diagrams \cite{qiu2025emoagent}.
+
+Despite these advances, most agentic systems remain text-centred. They simulate mental states rather than grounding reasoning in real physiological signals. Continuous sensor streams—such as ECG and EDA—are rarely integrated directly into the agent’s reasoning loop. This causes the disconnection between body-based sensing and mind-based reasoning. Current architectures lack dedicated components that interpret real-time physiological data and feed it into agentic decision-making \cite{qiu2025emoagent}.
+
+\subsection{Gap summary}
+The literature shows a clear split ecosystem. Physiological computing can detect stress but it lacks a clear explanation. On the other hand, LLM-driven and agentic systems provide structured reasoning but lack physiological grounding.
+
+What is missing is an integrated neuro-symbolic framework that combines deep learning’s pattern recognition with symbolic, agent-based reasoning. The next generation of digital mental health systems must not only detect stress accurately but also reason about physiological signals in a transparent, context-aware manner \cite{chin2023potential}, \cite{habicht2024closing}. Addressing this gap forms the conceptual foundation of the SmartStress framework.
+
+
+% ch 3
+\section{Methods}
+\label{sec:methods}
+% \subsection{Framework Overview}
+
+\subsection{PhysioSense Agent (DNN-based)}
+This agent acts as the system's sensory cortex, responsible for transforming raw physiological signals into interpretable perceptions rather than mere detection labels.
+
+\subsubsection{Task Formulation}
+We formulate real-time stress detection as a supervised binary classification task on physiological time-series. 
+To capture dynamic stress accumulation, we apply a sliding window technique, segmenting the continuous 700 Hz ECG stream into 20-second windows with a 1-second step. This duration ensures reliable HRV analysis while maintaining real-time responsiveness.
+
+Following segmentation, we explicitly address the challenge of individual physiological variability (e.g., differing resting heart rates) by constructing a normalized feature vector $x_t \in \mathbb{R}^{12}$.  Specifically, we extract 12 expert-defined metrics (e.g., Mean HRV, PSD sum) and normalize them against the user's neutral baseline via the ratio $x_t = f_{raw}^{(t)} / f_{base}$. This subject-adaptive normalization enables the model to learn relative deviations rather than absolute values, ensuring robustness across different subjects. Finally, the output target is mapped to a binary variable $y_t \in \{0, 1\}$, where $y_t=1$ corresponds to the `Stress' class, and $y_t=0$ aggregates `Neutral', `Amusement', and `Relax' into a ``Non-Stress'' safety zone.  Formally, the agent learns the mapping $\mathcal{F}: x_t \rightarrow P(y_t=1 | x_t)$.
+
+\subsubsection{Model Architecture}
+Standard DNNs often treat input features as a flat array, ignoring their semantic independence. In contrast, our architecture treats each of the 12 physiological features as a distinct semantic token, consisting of three sequential modules:
+
+\textbf{a. Linear Feature Embedding.}
+We first reshape the input into a sequence $X_{seq} \in \mathbb{R}^{12 \times 1}$ and project each scalar feature $x^{(i)}$ into a high-dimensional latent space via a learnable linear layer:
+\begin{equation}
+e^{(i)} = W_{emb} x^{(i)} + b_{emb}, \quad i \in \{1, \dots, 12\}
+\end{equation}
+
+where $x^{(i)} \in \mathbb{R}$ represents the $i$-th scalar physiological metric from the input sequence. The output $e^{(i)} \in \mathbb{R}^{d}$ is its corresponding embedded latent vector, with $d=32$ denoting the predefined embedding dimension. The terms $W_{emb} \in \mathbb{R}^{d \times 1}$ and $b_{emb} \in \mathbb{R}^{d}$ are the learnable weight matrix and bias vector of the linear layer, respectively. 
+
+By mapping a 1-dimensional scalar value into a $d$-dimensional continuous vector space, this projection significantly expands the representation capacity. Consistent with representation learning approaches for cardiovascular health \cite{ballinger2018deepheart}, this step enables the network to encode complex, non-linear characteristics of each physiological metric before they interact in the subsequent attention mechanism.
+
+
+
+\textbf{b. Inter-Feature Self-Attention.} 
+To model the non-linear dependencies between physiological markers (e.g., the correlation between an HRV drop and a PSD surge), we employ a Multi-Head Self-Attention mechanism, adapting the foundational architecture proposed by Vaswani et al. \cite{vaswani2017attention}.
+
+It dynamically re-weights the embedded feature sequence $E = [e^{(1)}, \dots, e^{(12)}] \in \mathbb{R}^{12 \times d}$ based on global context.
+\begin{equation}
+\text{Attention}(Q, K, V) = \text{Softmax}\left(\frac{QK^\top}{\sqrt{d}}\right) V
+\end{equation}
+
+where $Q$, $K$, and $V$ represent the Query, Key, and Value matrices, respectively. In our self-attention setup, these matrices are obtained by applying distinct learnable linear projections to the same input embedding sequence $E$.
+
+Specifically, the dot-product $QK^\top$ computes the raw similarity scores between different physiological features, capturing how heavily feature $i$ should attend to feature $j$. The scaling factor $\sqrt{d}$ (where $d=32$ is the embedding dimension defined previously) is applied to prevent these dot-products from growing excessively large, thereby ensuring stable gradient flow during training.
+
+Subsequently, the $\text{Softmax}$ function is applied row-wise to normalize these scaled similarity scores into a valid probability distribution, ensuring that the attention weights for each feature sum to 1. Finally, these normalized weights are multiplied by the Value matrix $V$. This operation yields a context-aware feature sequence $E_{attn}$, in which salient features indicative of stress are amplified while irrelevant physiological noise is suppressed, aligning with the interpretable feature selection philosophy of TabNet \cite{arik2021tabnet}.
+
+
+
+\textbf{c. Classification Head.} 
+Following the self-attention mechanism, the context-aware sequence $E_{attn} \in \mathbb{R}^{12 \times d}$ must be aggregated to form a definitive system prediction. First, the matrix $E_{attn}$ is flattened into a 1D vector $v \in \mathbb{R}^{12d}$ (i.e., a 384-dimensional vector, given $d=32$). This concatenated vector $v$ perfectly encapsulates the globally weighted physiological state across all 12 metrics. 
+
+It is subsequently passed through a deep Multi-Layer Perceptron (MLP). Aligning with prior deep learning frameworks for stress detection \cite{abd2024deep}, this module is constructed with fully connected layers interleaved with Batch Normalization and Dropout to prevent overfitting and ensure robust generalization. The final stress probability is computed as:
+\begin{equation}
+\hat{y} = \sigma(\text{MLP}(v))
+\end{equation}
+
+where the MLP acts as a non-linear classifier, and $\sigma(\cdot)$ denotes the Sigmoid activation function. This function restricts the network's raw output logits to a continuous probability space $[0, 1]$, where the scalar $\hat{y}$ directly represents the predicted likelihood of the user experiencing a stress state in the current 20-second window.
+
+
+% \subsubsection{Interpretability Interface}
+% In the medical domain, a binary classification label is clinically insufficient without physiological justification. As emphasized in prior works on interpretable deep models for ICU outcomes \cite{che2017interpretable}, trustworthy AI requires transparent reasoning regarding the underlying etiology. Therefore, the goal of this module is to transform the model's prediction into verifiable Physiological Evidence.
+
+% To achieve this, we employ \textbf{SHAP (SHapley Additive exPlanations) \cite{lundberg2017unified}} as a rigorous diagnostic tool. Rooted in cooperative game theory, SHAP provides a unified framework to interpret the model's decision by quantifying both the magnitude and directionality of each feature's contribution. For a given physiological feature $i$, its Shapley value $\phi_i$ is computed as the weighted average of its marginal contributions across all possible feature combinations:
+
+% \begin{equation}
+% \phi_i = \sum_{S \subseteq N \setminus \{i\}} \frac{|S|! (|N| - |S| - 1)!}{|N|!} \left[ f_x(S \cup \{i\}) - f_x(S) \right]
+% \end{equation}
+
+% where $N$ represents the complete set of input features ($|N|=12$), and $S$ is any feature subset excluding $i$. The function $f_x(S)$ defines the model's predictive output conditioned only on the features in $S$. Consequently, the term $\left[ f_x(S \cup \{i\}) - f_x(S) \right]$ isolates the exact marginal contribution of introducing feature $i$, while the fractional term serves as a combinatorial weight accounting for all possible permutation sequences.
+
+% By calculating $\phi_i$ for all 12 metrics, the system identifies the Primary Physiological Drivers—features with the highest absolute Shapley values. Furthermore, the sign of $\phi_i$ clarifies causality, distinguishing whether a stress episode is driven by, for instance, an abnormal drop in HRV or a surge in spectral energy. 
+
+% By explicitly surfacing these quantitative feature attributions, the perception model adheres strictly to the principles of Explainable Medical AI (XAI). This intrinsic transparency breaks the traditional ``black-box'' paradigm of deep learning, allowing clinical practitioners to independently verify the physiological basis of each stress detection event.
+
+
+
+\subsection{MindCare Agent (LLM-based)}
+The MindCare agent serves as the cognitive bridge between raw physiological detection and actionable intervention. While the PhysioSense identifies the presence of stress through biosignals, MindCare is designed to contextualize these states using natural language understanding and psychological grounding.
+
+\subsubsection{Semantic Stressor Identification}
+The agent processes user-provided text to identify the underlying causes of acute stress. Using a specialized extraction logic, MindCare parses unstructured conversational data to categorize stressors into domains such as work-related deadlines, interpersonal conflicts, or environmental factors. This transformation from physiological probability to semantic context allows the system to move beyond binary stress detection toward a nuanced understanding of the user’s situation.
+
+\subsubsection{Retrieval-Augmented Generation for Evidence-Based Support}
+To ensure that the support provided is clinically relevant and safe, MindCare utilizes a RAG framework(Fig.\ref{fig:RAG_workflow}). Instead of relying solely on the internal knowledge of a LLM, the agent queries a curated vector database containing validated psychological interventions, such as CBT techniques and mindfulness exercises. This ensures that every empathetic response is grounded in established psychoeducational materials, significantly reducing the risk of ``hallucinations'' common in generic conversational agents.
+
+The MindCare agent utilizes a highly structured prompt template designed to minimize cognitive bias and maximize reasoning transparency. The template is partitioned into four functional blocks: 
+(i) \textbf{Role Definition}, which establishes the agent as a compassionate yet professional mental health assistant; 
+(ii) \textbf{Physiological Context Injection}, where the numerical stress probabilities and SHAP-based feature importances from PhysioSense are converted into natural language descriptors (e.g., ``elevated detected''); 
+(iii) \textbf{Instructional Constraints}, which strictly prohibit the agent from providing formal medical diagnoses while mandating the use of evidence-based CBT techniques; and 
+(iv) \textbf{Few-shot Exemplars}, providing the model with diverse scenarios of mapping physiological arousal to potential daily stressors. This structured approach ensures that the agent's semantic inference remains consistent across varying levels of user input complexity.
+
+\subsubsection{Knowledge-Grounded RAG Engine}
+To ensure the clinical reliability of the generated interventions, MindCare employs a RAG mechanism. This process formally maps the user's semantic stressor into a high-dimensional vector space to retrieve evidence-based psychological support. 
+
+Let $\mathcal{D} = \{d_1, d_2, ..., d_n\}$ be the external knowledge corpus containing validated CBT techniques. Given the user's query $q$ and identified stressor $\mathcal{K}$, the retrieval process is defined as:
+\begin{equation}
+    v_q = f_{\phi}(q, \mathcal{K})
+\end{equation}
+where $f_{\phi}$ denotes the embedding model (e.g., text-embedding-3-small) that transforms the query into a normalized vector $v_q \in \mathbb{R}^d$. The engine then performs a similarity search over the vector database $\mathcal{V}$, where each document $d_i$ is represented by its embedding $v_i$:
+\begin{equation}
+    \mathcal{C}_{context} = \text{TopK} \left( \arg \max_{d_i \in \mathcal{D}} \frac{v_q \cdot v_i}{\|v_q\| \|v_i\|} \right)
+\end{equation}
+The retrieved context $\mathcal{C}_{context}$ consists of the $k$ most relevant text segments (typically $k=3$), which are then injected into the LLM prompt. This formal grounding ensures that the agent's reasoning is constrained by professional psychological literature rather than relying on stochastic generation alone.
+
+\begin{figure*}[htbp]
+    \centering
+    \includegraphics[width=1\linewidth]{figs/rag_workflow.png}
+    \caption{The working pipeline of the RAG-enhanced MindCare Agent. It takes user utterances and physiological states as inputs, forms query vectors, and retrieves validated mental health strategies (e.g., CBT techniques) from a curated vector database. The retrieved context is then synthesized by an LLM to generate an empathetic, evidence-based response.}
+    \label{fig:RAG_workflow}
+\end{figure*}
+
+\subsubsection{Empathetic Response Synthesis}
+Integrating the stress probability from PhysioSense and the retrieved context from the RAG module, MindCare synthesizes responses that prioritize empathy and validation. The agent employs a non-judgmental tone, designed to lower the user's immediate arousal levels before transitioning to task-oriented interventions.
+
+\subsection{Meta-Reflective Orchestrator}
+The third agent acts as the central brain of the SmartStress framework. It transcends simple task execution by governing the high-level logic of the closed-loop system, ensuring seamless transitions between stress detection, psychological reasoning, and proactive intervention.
+
+\subsubsection{Central Executive Control and Orchestration}
+Serving as the system's coordinator, Meta-Reflective Orchestrator (Agent 3) manages the global state within the LangGraph framework. It evaluates the outputs from PhysioSense and MindCare to determine the optimal intervention trajectory. By maintaining a Meta-Reflective layer, the agent monitors the entire reasoning chain, deciding whether the system should continue empathetic dialogue or escalate to active task-oriented relief based on the severity of the detected stress and user engagement.
+
+\subsubsection{TaskRelief: Proactive Contextual Intervention}
+The TaskRelief module within the orchestrator focuses on mitigating environmental stressors through actionable strategies. When a semantic stressor is identified (e.g., a looming deadline), TaskRelief proposes specific modifications to the user's workflow. These include:
+\begin{itemize}
+    \item \textbf{Adaptive Scheduling:} Dynamically rescheduling non-critical appointments to create cognitive buffers.
+    \item \textbf{Micro-Intervention Delivery:} Triggering short, evidence-based exercises (e.g., box breathing) derived from the RAG-enhanced insights of MindCare.
+\end{itemize}
+
+\subsubsection{Reflective Feedback and Human-in-the-Loop (HITL)}
+A core innovation of the Orchestrator is its reflective capability. It does not execute interventions autonomously; instead, it utilizes a Human-in-the-Loop mechanism to validate its reasoning. By requiring explicit user confirmation for schedule changes, the agent mitigates the "automation bias" and ensures operational safety. Furthermore, the orchestrator reflects on the user's feedback to adjust its internal heuristics, creating a personalized closed-loop that evolves with the user's coping mechanisms.
+
+\subsubsection{Algorithmic Characteristics and Design Rationale}
+\begin{algorithm}[h]
+\caption{Meta-Reflective Orchestration for Closed-loop Stress Intervention}
+\label{alg:orchestrator}
+\begin{algorithmic}[1]
+\REQUIRE Physiological data stream $\mathcal{S}$, User profile $\mathcal{H}$, User utterance $\mathcal{U}$
+\ENSURE Updated system state $\Theta$, Recommended intervention $\mathcal{A}$
+
+\STATE \textit{// Phase 1: Physiological Sensing}
+\STATE $P_{stress}, \mathcal{I}_{shap} \leftarrow \text{PhysioSense}(\mathcal{S})$ \COMMENT{Detect stress and explainability features}
+
+\IF{$P_{stress} > \tau_{threshold}$}
+    \STATE \textit{// Phase 2: Psychological Reasoning}
+    \STATE $\mathcal{K} \leftarrow \text{ExtractStressor}(\mathcal{U})$ \COMMENT{Identify semantic stressor}
+    \STATE $\mathcal{R}_{grounding} \leftarrow \text{RAG\_Retrieve}(\mathcal{K}, \text{VectorDB})$ \COMMENT{Retrieve CBT-based context}
+    \STATE $\mathcal{M}_{empathy} \leftarrow \text{MindCare}(\mathcal{R}_{grounding}, P_{stress})$ \COMMENT{Generate empathetic response}
+    
+    \STATE \textit{// Phase 3: Meta-Reflective Decision (Agent 3 Orchestrator)}
+    \STATE $\mathcal{T}_{proposal} \leftarrow \text{TaskRelief}(\mathcal{K}, \mathcal{H})$ \COMMENT{Formulate intervention tasks}
+    
+    \STATE \textit{// Phase 4: Human-in-the-Loop (HITL) Verification}
+    \IF{$\text{GetUserConfirmation}(\mathcal{M}_{empathy}, \mathcal{T}_{proposal}) = \text{ACCEPTED}$}
+        \STATE $\text{ExecuteIntervention}(\mathcal{T}_{proposal})$
+        \STATE $\Theta \leftarrow \text{UpdateState}(\text{SUCCESS})$
+    \ELSE
+        \STATE $\Theta \leftarrow \text{UpdateState}(\text{REFINE})$
+        \STATE \textbf{goto} Line 5 \COMMENT{Refine reasoning based on user feedback}
+    \ENDIF
+\ELSE
+    \STATE $\text{ContinueMonitoring}(\mathcal{S})$
+\ENDIF
+\RETURN System State $\Theta$
+\end{algorithmic}
+\end{algorithm}
+
+The orchestration logic presented in Algorithm 1 exhibits three core characteristics that distinguish the SmartStress framework from traditional linear stress-management systems:
+
+\begin{itemize}
+    \item \textbf{State-Driven Dynamic Orchestration:} Unlike rigid decision trees, our orchestrator utilizes a state-machine architecture (implemented via LangGraph). As shown in Lines 14--17, the system can cyclically transition back to the reasoning phase if the initial intervention is rejected. This non-linear flow allows the agents to iteratively refine their understanding of the user’s context, mimicking a reflective human-like reasoning process.
+    
+    \item \textbf{Multimodal Feedback Integration:} The algorithm achieves deep coupling between physiological signals ($P_{stress}$) and semantic reasoning ($\mathcal{K}$). By integrating numerical sensor data with unstructured natural language, the orchestrator ensures that interventions are not only triggered by biological urgency but are also grounded in the specific situational context of the user.
+    
+    \item \textbf{Safety-Centric Agentic Reasoning:} A pivotal design choice is the inclusion of the Human-in-the-Loop (HITL) verification gate (Line 11). This ensures that while the system operates with high autonomy in monitoring and reasoning, it remains strictly subservient to user agency regarding environment-altering actions (e.g., schedule rescheduling). This balance is critical for maintaining user trust and ensuring clinical safety in mental health applications.
+\end{itemize}
+
+
+% ch 4
+\section{Experiments and Results}
+\label{sec:guidelines}
+\subsection{Experimental Setup}
+\subsubsection{Dataset} We utilize the WESAD  dataset. WESAD is a publicly available, multimodal benchmark containing physiological recordings from fifteen subjects. The experimental protocol elicited five distinct affective states: baseline, stress, amusement, rest, and meditation. For each subject, the dataset provides synchronized high-frequency streams of Electrodermal Activity (EDA), Respiration (RESP), Body Temperature (TEMP), Electromyography (EMG), and Electrocardiogram (ECG).
+\subsubsection {Data Preprocessing and Feature Engineering} 
+We select the ECG signal as the primary input.To transform non-stationary raw ECG signals into robust feature representations, we use heart
+rate variablility (HRV) based on WESAD study\cite{schmidt2018introducing}:
+\begin{itemize}
+\item \textbf{Signal Filtration and Peak Detection:} An adaptive thresholding-based R-peak detection algorithm was used to automatically locate R-peaks and calculate precise RR-intervals.
+\item \textbf{Feature Extraction:} Data is segmented using a 20-second sliding window with a 1-second step. For each window, a 12-dimensional feature vector is extracted:
+\begin{itemize}
+\item \textbf{Time-domain:} Mean Heart Rate and Standard Deviation (STD) of Heart Rate, along with the Mean, STD, and Root Mean Square (RMS) of HRV .
+\item \textbf{Frequency-domain:} Mean/STD Fourier Frequencies and Sum PSD components.
+\item \textbf{Geometric:} Triangular Interpolation of NN interval histogram (TINN), the HRV Index, the count of successive NN intervals differing by more than 50ms ((\#NN50), and its corresponding percentage pNN50).
+\end{itemize}
+% \item \textbf{Normalization:} To account for inter-subject physiological baselines, we perform subject-specific Z-score normalization. Furthermore, to address class imbalance, we utilize weighted random sampling during training to ensure high sensitivity toward the minority "Stress" class.
+\end{itemize}
+\subsubsection{Evaluation Metrics}
+
+To provide a comprehensive assessment of the proposed multi-modal framework, we employ a multi-tier evaluation strategy covering physiological classification, semantic retrieval quality, and model interpretability.
+
+\textbf{a. Stress Classification Metrics}
+For the binary stress detection task on the WESAD dataset, we utilize standard classification metrics derived from the confusion matrix, including True Positives ($TP$), True Negatives ($TN$), False Positives ($FP$), and False Negatives ($FN$). Given the inherent class imbalance in physiological monitoring—where ``Stress" sessions often represent the minority class compared to "Baseline" or ``Amusement". We prioritize the $F_1$ Score to ensure a balanced evaluation of both sensitivity and specificity. The metrics are defined as follows:
+
+\begin{enumerate}
+    \item \textbf{Accuracy ($Acc$):} The proportion of correctly classified instances among the total population:
+    \begin{equation}
+        Acc = \frac{TP + TN}{TP + TN + FP + FN}
+    \end{equation}
+
+    \item \textbf{Precision ($Pre$) and Recall ($Rec$):} Precision quantifies the model's ability to avoid false alarms, while Recall (sensitivity) measures its ability to capture actual stress events:
+    \begin{equation}
+        Pre = \frac{TP}{TP + FP}, \quad Rec = \frac{TP}{TP + FN}
+    \end{equation}
+
+    \item \textbf{$F_1$ Score:} The harmonic mean of Precision and Recall, providing a robust single-score measure for imbalanced data:
+    \begin{equation}
+        F_1 = 2 \cdot \frac{Pre \cdot Rec}{Pre + Rec}
+    \end{equation}
+\end{enumerate}
+
+\textbf{b. Retrieval and Semantic Alignment Metrics}
+To evaluate the effectiveness of the RAG component in the counseling agent, we adopt metrics that quantify both lexical overlap and contextual meaning:
+
+\begin{enumerate}
+    \item \textbf{TF-IDF Cosine Similarity:} This measures the lexical alignment between the generated response ($\mathbf{A}$) and the expert reference ($\mathbf{B}$) from the CounselChat corpus:
+    \begin{equation}
+        \text{Cosine Similarity} = \frac{\mathbf{A} \cdot \mathbf{B}}{\|\mathbf{A}\| \|\mathbf{B}\|}
+    \end{equation}
+
+    \item \textbf{BERTScore\cite{zhang2019bertscore}:} Utilizing a \texttt{roberta-large} backbone, BERTScore captures semantic similarity by calculating the cosine similarity of token-level contextual embeddings. This metric is more robust to paraphrasing than traditional n-gram metrics.
+
+    \item \textbf{Performance Boundary Analysis:} We analyze the Minimum and Maximum similarity scores to assess the ``performance floor" and ``ceiling," quantifying the system's stability and its ability to achieve expert-level response peaks.
+\end{enumerate}
+
+\textbf{c. Statistical Significance and Interpretability}
+In the medical domain, a binary classification label is clinically insufficient without physiological justification. As emphasized in prior works on interpretable deep models for ICU outcomes \cite{che2017interpretable}, trustworthy AI requires transparent reasoning regarding the underlying etiology. Therefore, the goal of this module is to transform the model's prediction into verifiable Physiological Evidence.
+
+To achieve this, we employ \textbf{SHAP} (SHapley Additive exPlanations) \cite{lundberg2017unified} as a rigorous diagnostic tool. Rooted in cooperative game theory, SHAP provides a unified framework to interpret the model's decision by quantifying both the magnitude and directionality of each feature's contribution. For a given physiological feature $i$, its Shapley value $\phi_i$ is computed as the weighted average of its marginal contributions across all possible feature combinations:
+
+\begin{equation}
+\phi_i = \sum_{S \subseteq N \setminus \{i\}} \frac{|S|! (|N| - |S| - 1)!}{|N|!} \left[ f_x(S \cup \{i\}) - f_x(S) \right]
+\end{equation}
+
+where $N$ represents the complete set of input features ($|N|=12$), and $S$ is any feature subset excluding $i$. The function $f_x(S)$ defines the model's predictive output conditioned only on the features in $S$. Consequently, the term $\left[ f_x(S \cup \{i\}) - f_x(S) \right]$ isolates the exact marginal contribution of introducing feature $i$, while the fractional term serves as a combinatorial weight accounting for all possible permutation sequences.
+
+By calculating $\phi_i$ for all 12 metrics, the system identifies the Primary Physiological Drivers—features with the highest absolute Shapley values. Furthermore, the sign of $\phi_i$ clarifies causality, distinguishing whether a stress episode is driven by, for instance, an abnormal drop in HRV or a surge in spectral energy. 
+
+By explicitly surfacing these quantitative feature attributions, the perception model adheres strictly to the principles of Explainable Medical AI (XAI). This intrinsic transparency breaks the traditional ``black-box'' paradigm of deep learning, allowing clinical practitioners to independently verify the physiological basis of each stress detection event.
+
+\subsection{RQ1 – Stress Detection Performance}
+In this research, we benchmarked our proposed deep learning architecture using the feature set extracted from the WESAD dataset. Table \ref{tab:wesad_expt} presents a comparative analysis between our method and a diverse set of baselines, including traditional machine learning classifiers (KNN, Decision Trees, AdaBoost, and LDA)\cite{schmidt2018introducing}, a standard supervised DNN, and the recent Pulse-PPG\cite{saha2025pulse} model.
+
+The experimental results demonstrate that our framework achieves state-of-the-art performance on the WESAD dataset, reaching a peak $F_1$ score of 95.78\%. This performance surpasses all evaluated baselines, including the fine-tuned Pulse-PPG model ($F_1$ = 93.92\%) and the standard supervised DNN ($F_1$ = 92.00\%). Our model exhibits a highly balanced performance profile with a Precision of 96.26\% and a Recall of 95.31\%. This high sensitivity is particularly critical for real-time health applications, as it ensures the reliable capture of transient physiological strain while effectively minimizing false alarms.
+
+Furthermore, the significant performance gap between our architecture and traditional classifiers—such as KNN ($F_1$ = 75.39\%) and Decision Trees ($F_1$ = 77.01\%)—underscores the limitations of manual feature engineering and shallow learning in modeling high-dimensional physiological data. By contrast, our framework’s ability to outperform both classical methods and competitive deep learning models validates its efficacy in extracting robust, discriminative representations from complex and non-linear physiological signals.
+
+\begin{table}[h] % 如果在双栏文档中放不下，建议保留星号；如果单栏则去掉星号
+  \caption{ECG-based DNN against traditional methods}
+  \centering % 取消注释，使表格内容与标题居中对齐
+  \renewcommand{\arraystretch}{1.05}
+  \setlength{\tabcolsep}{5pt} % 略微收紧列间距，防止新增列后超出页面宽度
+  \begin{tabular}{lccccccccc} % 增加 3 列，总共 10 列 (1L + 9C)
+    \toprule
+    % ===== 表头 =====
+    \multirow{2}{*}{\textbf{Method}} 
+    & \multicolumn{3}{c}{\textbf{WESAD}}
+    & \multicolumn{3}{c}{\textbf{MOODS}} 
+    & \multicolumn{3}{c}{\textbf{StressID}} \\
+    
+    \cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10}
+    
+    & \textbf{P} & \textbf{R} & \textbf{F$_1$}
+    & \textbf{P} & \textbf{R} & \textbf{F$_1$}
+    & \textbf{P} & \textbf{R} & \textbf{F$_1$} \\
+
+    \midrule
+
+    % ====== 数据行 ======
+    % Papagei & - & - & - & - & - & - & - & - & - \\
+    Pulse-PPG & 92.59 & 96.00 & 93.92 & - & - & - & - & - & - \\
+    % Random Forest & - & - & 86.10 & - & - & - & - & - & - \\
+    DNN & 86.68 & 99.69 & 92.87 & - & - & - & - & - & - \\
+    KNN & - & - & 75.39 & - & - & - & - & - & - \\
+    Decision Tree & - & - & 77.01 & - & - & - & - & - & - \\
+    AdaBoost & - & - & 80.20 & - & - & - & - & - & - \\
+    LDA & - & - & 81.31 & - & - & - & - & - & - \\
+    
+    \rowcolor{blue!10}
+    Ours & \textbf{96.26} & \textbf{95.31} & \textbf{95.78} & \textbf{-} & \textbf{-} & \textbf{-} & \textbf{-} & \textbf{-} & \textbf{-} \\
+
+    \bottomrule
+  \end{tabular}
+\label{tab:wesad_expt}
+\end{table}
+
+\subsection{RQ2 – Ablation Study}
+
+\subsubsection{For Stress Classification}
+
+To evaluate the specific contribution of the attention mechanism to our classification framework, we conducted an ablation study on the WESAD dataset. We compared the proposed Attention DNN against a Standard DNN baseline using binary stress classification (Stress vs. Non-Stress). As summarized in Table \ref{tab:ablation_final}, the inclusion of the attention module yields a substantial improvement in the model’s ability to characterize physiological states. 
+
+The Attention DNN demonstrates a marked improvement in overall performance, with Accuracy rising from 96.28\% to 97.97\% (+1.69\%) and the $F_1$ Score increasing significantly from 92.87\% to 95.78\% (+2.91\%). This final $F_1$ score notably exceeds the performance of competitive benchmarks. A granular analysis reveals that the attention mechanism's primary impact lies in its capacity to enhance Precision, which saw a substantial gain of 7.58\% (rising to 96.26\%). This improvement suggests that the attention module enables the network to more effectively prioritize discriminative temporal segments within the high-dimensional physiological signal. By focusing on ``motifs" or key physiological perturbations—a strategy identified as critical for robust ECG representation learning—the model reduces false-positive detections and produces more "selective" and reliable predictions.
+
+While this gain in Precision is accompanied by a moderate 4.38\% decrease in Recall (from 0.9969 to 0.9531), the overall increase in the $F_1$ score confirms that the trade-off is highly beneficial. This phenomenon suggests that while the attention mechanism might overlook some subtle, non-discriminative perturbations, it successfully refines the feature representation to be more robust against noise. For real-time monitoring applications, this shift toward higher specificity is particularly valuable, as it minimizes user-facing ``false alarms" without compromising the model's overall diagnostic integrity.
+
+\subsubsection{For RAG Enhancement} 
+To evaluate the contribution of the Retrieval-Augmented Generation (RAG) component to the system's performance, we conducted an ablation study comparing a baseline model (Control) against the RAG-enhanced system (Experimental) integrated with the CounselChat expert corpus. The evaluation utilized two complementary metrics: TF-IDF Cosine Similarity for lexical overlap and BERTScore F1 (using \texttt{roberta-large}) for semantic and contextual alignment across 282 queries.
+
+\textbf{a. Overall Lexical and Semantic Alignment} \\
+The integration of RAG yielded a positive trend across both evaluation metrics. The mean TF-IDF Cosine Similarity improved by 5.8\% ($0.0416 \rightarrow 0.0440$), while the BERTScore F1 demonstrated a higher semantic gain of 7.7\% ($0.0784 \rightarrow 0.0844$). Additionally, BERTScore Precision saw a notable increase of 10.4\%, rising from $0.1158$ to $0.1278$.
+
+\textbf{b. Performance Stability and Edge Case Mitigation} \\
+A significant finding is the impact of RAG on the system's ``performance floor'' and ``ceiling''. By grounding the agent in professional counseling data, the system minimized instances of low-quality lexical alignment:
+\begin{itemize}
+    \item The minimum similarity score rose from $0.0028$ to $0.0046$, representing a 64.3\% improvement in the worst-case performance scenario.
+    \item The maximum similarity score increased by 10.6\% ($0.1786 \rightarrow 0.1975$), suggesting that RAG allows the model to achieve higher peaks of expert-level alignment.
+\end{itemize}
+
+\textbf{c. Domain-Specific Efficacy} \\
+The RAG mechanism proved exceptionally effective in specialized counseling domains where general-purpose LLMs often lack depth. Notable improvements include:
+\begin{itemize}
+    \item Parenting: Demonstrated a significant TF-IDF similarity gain of 0.1027 ($0.0048 \rightarrow 0.1075$).
+    \item Military Issues: TF-IDF similarity increased from $0.0481$ to $0.1198$.
+    \item Complex Intersections: Categories such as ``Grief and Loss, Substance Abuse, Trauma'' saw a substantial BERTScore F1 increase of 0.1878.
+\end{itemize}
+
+
+\begin{table}[h]
+  \caption{Ablation Study: Impact of Attention and RAG Components}
+  \centering
+  \renewcommand{\arraystretch}{1.1}
+  \setlength{\tabcolsep}{8pt} % 优化列间距以容纳详细指标
+  \begin{tabular}{lccc}
+    \toprule
+    \textbf{Metric / Dataset} & \textbf{w/o Component} & \textbf{Ours} & \textbf{$\Delta$} \\
+    \midrule
+    
+    % ===== Section A: WESAD Classification (ECG-based Stress Detection) =====
+    \rowcolor{gray!10} \multicolumn{4}{c}{\textbf{A. WESAD Classification (Attention)}} \\
+    Accuracy  & 0.9628 & 0.9797 & $+0.0169$ \\
+    Precision & 0.8668 & 0.9626 & $+0.0758$ \\
+    Recall    & 0.9969 & 0.9531 & $-0.0438$ \\
+    \rowcolor{blue!10}
+    \textbf{F$_1$} & \textbf{0.9287} & \textbf{0.9578} & \textbf{+0.0291} \\
+    
+    \midrule
+    
+    % ===== Section B: CounselChat Evaluation (RAG-based Retrieval) =====
+    \rowcolor{gray!10} \multicolumn{4}{c}{\textbf{B. CounselChat Alignment (RAG)}} \\
+    Mean TF-IDF Sim. & 0.0416 & 0.0440 & $+0.0024$ \\
+    BERTScore Precision& 0.1158 & 0.1278 & $+0.0120$ \\
+    Min Sim. & 0.0028 & 0.0046 & $+0.0018$ \\
+    Max Sim. & 0.1786 & 0.1975 & $+0.0189$ \\
+    \rowcolor{blue!10}
+    \textbf{BERTScore F$_1$} & \textbf{0.0784} & \textbf{0.0844} & \textbf{+0.0060} \\
+    
+    \bottomrule
+  \end{tabular}
+  \label{tab:ablation_final}
+\end{table}
+
+
+
+\subsection{RQ3 – Interpretability Analysis}
+
+\subsubsection{SHAP Analysis}
+To demystify the decision-making process of the proposed deep learning model, we conducted a global interpretability analysis using SHAP (SHapley Additive exPlanations). As illustrated in Fig. \ref{fig:shap_summary} (SHAP Summary Plot), both frequency-domain features (FFT Mean, FFT Std) and temporal features reflecting parasympathetic activity (RMSSD, Mean HRV) emerged as the most influential predictors. This distribution of feature importance confirms that the model organically combines both oscillatory dynamics and temporal stability metrics of heart rate variability to accurately detect acute stress. Such mechanism aligns closely with pathophysiological understandings of autonomic nervous system dynamics under cognitive load.
+
+We further investigated the directional impact of individual features using the SHAP beeswarm plot (Fig. \ref{fig:shap_beeswarm_plot}). The visualization reveals a clear continuous trend where lower values in RMSSD and Mean HRV (indicated by blue scatter points) correspond with positive SHAP values, driving the model towards a 'Stress' prediction. This tight correlation confirms that the network has learned robust, clinically sound decision rules—specifically, that reduced vagal tone and lowered HRV are core indicators of stress—rather than memorizing random dataset noise.
+
+To demonstrate local interpretability, Fig. \ref{fig:shap_waterfall_stress} visualizes a SHAP waterfall plot for a single instance prediction. In a prototypical 'Stress' sample, we observe that substantial deviations in the frequency-domain component (FFT Mean) and suppressed Mean HRV synergistically pushed the classification output far above the expected base value. Providing this instance-level transparency crucial for clinical validation, demonstrating the model's reliability for deployment in real-world wearable monitoring platforms.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\linewidth]{figs/shap_summary_bar.png}
+    \caption{SHAP summary bar plot displaying the global importance of the extracted physiological features. The x-axis represents the mean absolute SHAP value (average impact on model output magnitude). Frequency-domain features (FFT Mean, FFT Std) and parasympathetic markers (RMSSD, Mean HRV) emerge as the primary drivers for the model's stress classification.}
+    \label{fig:shap_summary}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\linewidth]{figs/shap_beeswarm_plot.png}
+    \caption{SHAP beeswarm plot illustrating the individual impact of feature values on the model's stress prediction. Each dot represents a single 20-second window instance. The color indicates the original feature value (red for high, blue for low), showing how decreased vagal tone indicators (e.g., lower RMSSD and Mean HRV) consistently push the model toward a positive 'Stress' prediction.}
+    \label{fig:shap_beeswarm_plot}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\linewidth]{figs/shap_waterfall_stress.png}
+    \caption{SHAP waterfall plot demonstrating local interpretability for a representative 'Stress' instance. The plot explains how individual feature values—most notably an elevated FFT Mean (+0.19) and a suppressed Mean HRV (+0.11)—synergistically shift the model's expected base value (0.358) to its final high-stress prediction state.}
+    \label{fig:shap_waterfall_stress}
+\end{figure}
+
+% \begin{table}[h]%%%%%
+% \caption{ECG-based DNN against traditional methods}
+% \label{table}
+% \setlength{\tabcolsep}{3pt}
+% \begin{tabular}{|p{25pt}|p{75pt}|p{115pt}|}
+% \hline
+% Symbol& 
+% Quantity& 
+% Conversion from Gaussian and \par CGS EMU to SI $^{\mathrm{a}}$ \\
+% \hline
+% $\Phi $& 
+% magnetic flux& 
+% 1 Mx $\to  10^{-8}$ Wb $= 10^{-8}$ V$\cdot $s \\
+% $B$& 
+% magnetic flux density, \par magnetic induction& 
+% 1 G $\to  10^{-4}$ T $= 10^{-4}$ Wb/m$^{2}$ \\
+% $H$& 
+% magnetic field strength& 
+% 1 Oe $\to  10^{3}/(4\pi )$ A/m \\
+% $m$& 
+% magnetic moment& 
+% 1 erg/G $=$ 1 emu \par $\to 10^{-3}$ A$\cdot $m$^{2} = 10^{-3}$ J/T \\
+% $M$& 
+% magnetization& 
+% 1 erg/(G$\cdot $cm$^{3}) =$ 1 emu/cm$^{3}$ \par $\to 10^{3}$ A/m \\
+% 4$\pi M$& 
+% magnetization& 
+% 1 G $\to  10^{3}/(4\pi )$ A/m \\
+% $\sigma $& 
+% specific magnetization& 
+% 1 erg/(G$\cdot $g) $=$ 1 emu/g $\to $ 1 A$\cdot $m$^{2}$/kg \\
+% $j$& 
+% magnetic dipole \par moment& 
+% 1 erg/G $=$ 1 emu \par $\to 4\pi \times  10^{-10}$ Wb$\cdot $m \\
+% $J$& 
+% magnetic polarization& 
+% 1 erg/(G$\cdot $cm$^{3}) =$ 1 emu/cm$^{3}$ \par $\to 4\pi \times  10^{-4}$ T \\
+% $\chi , \kappa $& 
+% susceptibility& 
+% 1 $\to  4\pi $ \\
+% $\chi_{\rho }$& 
+% mass susceptibility& 
+% 1 cm$^{3}$/g $\to  4\pi \times  10^{-3}$ m$^{3}$/kg \\
+% $\mu $& 
+% permeability& 
+% 1 $\to  4\pi \times  10^{-7}$ H/m \par $= 4\pi \times  10^{-7}$ Wb/(A$\cdot $m) \\
+% $\mu_{r}$& 
+% relative permeability& 
+% $\mu \to \mu_{r}$ \\
+% $w, W$& 
+% energy density& 
+% 1 erg/cm$^{3} \to  10^{-1}$ J/m$^{3}$ \\
+% $N, D$& 
+% demagnetizing factor& 
+% 1 $\to  1/(4\pi )$ \\
+% \hline
+% % \multicolumn{3}{p{251pt}}{Vertical lines are optional in tables. Statements that serve as captions for 
+% % the entire table do not need footnote letters. }\\
+% % \multicolumn{3}{p{251pt}}{$^{\mathrm{a}}$Gaussian units are the same as cg emu for magnetostatics; Mx 
+% % $=$ maxwell, G $=$ gauss, Oe $=$ oersted; Wb $=$ weber, V $=$ volt, s $=$ 
+% % second, T $=$ tesla, m $=$ meter, A $=$ ampere, J $=$ joule, kg $=$ 
+% % kilogram, H $=$ henry.}
+% \end{tabular}
+% \label{tab1}
+% \end{table}
+
+% \begin{table}[htbp]
+%   \caption{Ablation study of different components}
+%   \centering
+%   \renewcommand{\arraystretch}{1.1} 
+%   \setlength{\tabcolsep}{12pt}
+%   \begin{tabular}{lcc}
+%     \toprule
+%     \textbf{Method} & \textbf{WESAD} & \textbf{ConselChat} \\
+%     \midrule
+%     \rowcolor{gray!10} \multicolumn{3}{c}{\textbf{A. Classification}} \\
+%     \midrule
+%     Ours & \textbf{95.78} & - \\
+%     \quad - w/o Attention & 92,87 & - \\
+%     \midrule
+%     \rowcolor{gray!10} \multicolumn{3}{c}{\textbf{B. Retrieval}} \\
+%     \midrule
+%     Ours & - & \textbf{8.44} \\
+%     \quad - w/o RAG & - & 7.84 \\
+%     \bottomrule
+%   \end{tabular}
+%   \label{tab:ablation_final}
+% \end{table}
+
+\section{Discussion}
+\label{sec:discussion}
+The SmartStress framework proposed in this study establishes a closed-loop stress intervention architecture by integrating the PhysioSense Agent with an Interpretability Interface, a RAG module for evidence-based support, and a Meta-Reflective Orchestrator. The proposed framework extends beyond mere detection to enable contextual understanding, explainable reasoning, and proactive intervention, SmartStress transforms stress monitoring from a passive diagnostic tool into an adaptive, human-centered support system.
+
+\subsection{Strengths}
+\subsubsection{Predictive Performance and Interpretability}
+
+The PhysioSense Agent achieves strong stress classification accuracy, with SHAP analysis confirming its decisions are driven by RMSSD, Mean HRV, and frequency-domain features—well-documented indicators of autonomic nervous system modulation under stress. This alignment with physiological theory ensures the model captures meaningful biological dynamics and not incidental statistical patterns, delivering mechanism-level transparency critical for user trust and clinical plausibility in wearable mental health applications.
+
+\subsubsection{RAG-Enhanced Response Stability}
+
+The MindCare Agent integrates RAG to constrain responses using curated. While quantitative similarity improvements are moderate, the RAG mechanism significantly elevates the system’s performance floor, reducing low-quality outputs.
+
+\subsubsection{Adaptive Closed-Loop Intervention}
+
+ The Meta-Reflective Orchestrator shifts from linear detection pipelines to state-aware, adaptive intervention. It enables revisiting semantic reasoning for misaligned user feedback and incorporates the HITL verification mechanism, balancing user agency with system autonomy. 
+ 
+\subsection{Limitations and Future Work}
+\subsubsection{Dataset and Real-World Robustness}
+
+ Evaluated solely on the controlled WESAD dataset, the framework lacks validation under real-world conditions (e.g., motion artifacts, environmental variability, long-term behavioral fluctuations). Future work will prioritize longitudinal, in-the-wild studies to assess wearable usage robustness.
+ 
+ \subsubsection{Single-Modal Physiological Input}
+ 
+The exclusive focus on ECG-derived features reduces hardware complexity but constrains the scope of stress representation. Future research will incorporate complementary modalities such as electrodermal activity, photoplethysmography, and sleep or activity metrics, while exploring multimodal fusion and adaptive personalization to improve detection sensitivity and model generalizability.
+
+ \subsubsection{Residual LLM and Safety Risks}
+
+ Despite HITL mitigating automation bias, LLMs entail residual risks. Ongoing refinement of prompting strategies, domain-specific constraints, and systematic safety validation is required for large-scale or clinical-grade deployment.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+
+\section*{References}
+
+\vspace{-3ex} 
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+
+\appendices
+
+\section*{Appendix}
+
+Appendixes, if needed, appear before the acknowledgment.
+
+
+% \subsection{References}
+% References need not be cited in text. When they are, they appear on the
+% line, in square brackets, inside the punctuation. Multiple references are
+% each numbered with separate brackets. When citing a section in a book,
+% please give the relevant page numbers. In text, refer simply to the
+% reference number. Do not use ``Ref.'' or ``reference'' except at the
+% beginning of a sentence: ``Reference [3] shows \textellipsis .'' Please do not use
+% automatic endnotes in \textit{Word}, rather, type the reference list at the end of the
+% paper using the ``References'' style.
+
+% Reference numbers are set flush left and form a column of their own, hanging
+% out beyond the body of the reference. The reference numbers are on the line,
+% enclosed in square brackets. In all references, the given name of the author
+% or editor is abbreviated to the initial only and precedes the last name. Use
+% them all; use \textit{et al}.\ only if names are not given.
+% Abbreviate conference titles. When citing IEEE Transactions,
+% provide the issue number, page range, volume number, year, and/or month if
+% available. When referencing a patent, provide the day and the month of
+% issue, or application. References may not include all information; please
+% obtain and include relevant information. Do not combine references. There
+% must be only one reference with each number. If there is a URL included with
+% the print reference, it can be included at the end of the reference.
+
+% Other than books, capitalize only the first word in a paper title, except
+% for proper nouns and element symbols. For papers published in translation
+% journals, please give the English citation first, followed by the original
+% foreign-language citation. See the end of this document for formats and
+% examples of common references. For a complete discussion of references and
+% their formats, see the IEEE style manual at 
+% https://\discretionary{}{}{}journals.ieeeauthorcenter.ieee.org/\discretionary{}{}{}create-your-ieee-journal-article/\discretionary{}{}{}create-the-text-of-your-article/\discretionary{}{}{}ieee-editorial-style-manual/.
+
+
+% \subsection{Footnotes}
+% Number footnotes separately in superscript numbers.\footnote{It is recommended that footnotes be avoided (except for 
+% the unnumbered footnote with the receipt date on the first page). Instead, 
+% try to integrate the footnote information into the text.} Place the actual 
+% footnote at the bottom of the column in which it is cited; do not put 
+% footnotes in the reference list (endnotes). Use letters for table footnotes 
+% (see Table \ref{table}).
+
+% \section*{Submitting Your Paper for Review}           
+
+% \subsection{Review Stage Using IEEE ScholarOne Manuscripts}
+
+% Contributions to the Transactions, Journals, and Letters may be submitted electronically on IEEE ScholarOne Manuscripts. You can get help choosing the correct publication for your manuscript as well as find their corresponding peer review site using the tools listed at http://\discretionary{}{}{}www.ieee.org/\discretionary{}{}{}publications\_standards/\discretionary{}{}{}publications/\discretionary{}{}{}authors/\discretionary{}{}{}authors\_submission.html. Once you have chosen your publication and navigated to the IEEE ScholarOne Manuscripts site, you may log in with your IEEE web account. If there is none, please create a new account. After logging in, go to your Author Center and click ``Start New Submission.''
+
+% Along with other information, you will be asked to select the manuscript type from the journal's pre-determined list of options. Depending on the journal, there are various steps to the submission process; please make sure to carefully answer all of the submission questions presented to you. At the end of each step you must click ``Save and Continue''; just uploading the paper is not sufficient. After the last step, you should see a confirmation that the submission is complete. You should also receive an e-mail confirmation. For inquiries regarding the submission of your paper on IEEE ScholarOne Manuscripts, please contact oprs-support@ieee.org or call +1 732 465 5861.
+
+% IEEE ScholarOne Manuscripts will accept files for review in various formats. There is a ``Journal Home'' link on the log-in page of each IEEE ScholarOne Manuscripts site that will bring you to the journal's homepage with their detailed requirements; please check these guidelines for your particular journal before you submit.
+
+% \subsection{Final Stage Using IEEE ScholarOne Manuscripts}
+% Upon acceptance, you will receive an email with specific instructions
+% regarding the submission of your final files. To avoid any delays in
+% publication, please be sure to follow these instructions. Most journals
+% require that final submissions be uploaded through IEEE ScholarOne Manuscripts,
+% although some may still accept final submissions via email. Final
+% submissions should include source files of your accepted manuscript, high
+% quality graphic files, and a formatted pdf file. If you have any questions
+% regarding the final submission process, please contact the administrative
+% contact for the journal.
+
+% In addition to this, upload a file with complete contact information for all
+% authors. Include full mailing addresses, telephone numbers, fax numbers, and
+% e-mail addresses. Designate the author who submitted the manuscript on
+% IEEE ScholarOne Manuscripts as the ``corresponding author.'' This is the only
+% author to whom proofs of the paper will be sent.
+
+% \subsection{Copyright Form}
+% Authors must submit an electronic IEEE Copyright Form (eCF) upon submitting 
+% their final manuscript files. You can access the eCF system through your 
+% manuscript submission system or through the Author Gateway. You are 
+% responsible for obtaining any necessary approvals and/or security 
+% clearances. For additional information on intellectual property rights, 
+% visit the IEEE Intellectual Property Rights department web page at 
+% \underline{http://www.ieee.org/publications\_standards/publications/rights/}\discretionary{}{}{}\underline{index.html}.
+
+% \section*{IEEE Publishing Policy}
+% The general IEEE policy requires that authors should only submit original 
+% work that has neither appeared elsewhere for publication, nor is under 
+% review for another refereed publication. The submitting author must disclose 
+% all prior publication(s) and current submissions when submitting a 
+% manuscript. Do not publish ``preliminary'' data or results. The submitting 
+% author is responsible for obtaining agreement of all coauthors and any 
+% consent required from employers or sponsors before submitting an article. 
+% The IEEE Transactions and Journals Department strongly discourages courtesy 
+% authorship; it is the obligation of the authors to cite only relevant prior 
+% work.
+
+% The IEEE Transactions and Journals Department does not publish conference 
+% records or proceedings, but can publish articles related to conferences that 
+% have undergone rigorous peer review. Minimally, two reviews are required for 
+% every article submitted for peer review.
+
+\section*{Acknowledgment}
+
+% The preferred spelling of the word ``acknowledgment'' in American English is 
+% without an ``e'' after the ``g.'' Use the singular heading even if you have 
+% many acknowledgments. Avoid expressions such as ``One of us (S.B.A.) would 
+% like to thank $\ldots$ .'' Instead, write ``F. A. Author thanks $\ldots$ .'' 
+In most cases, sponsor and financial support acknowledgments are placed in the unnumbered footnote on the first page, not here.
+
+% \section*{References}
+% \def\refname{\vadjust{\vspace*{-2.5em}}} %Please don't do this in a real paper.
+
+% \noindent\textit{Basic format for books:}
+
+% \noindent J. K. Author, ``Title of chapter in the book,'' in {\it Title of His Published Book, x}th ed. City of Publisher,
+% (only U.S. State), Country: Abbrev. of Publisher, year, ch. $x$, sec. $x$,\break pp.~{\it xxx--xxx.}
+
+% {\it Examples:}{\vadjust{\vspace*{-2.5em}}}
+% \begin{thebibliography}{00}
+% \bibitem{bib1} G. O. Young, ``Synthetic structure of industrial plastics,'' in {\it Plastics,}2$^{\mathrm{nd}}$ ed., vol. 3, J. Peters, Ed. New York, NY, USA: McGraw-Hill, 1964, pp. 15--64.
+% \bibitem{bib2} W.-K. Chen, {\it Linear Networks and Systems.}Belmont, CA, USA: Wadsworth, 1993, pp. 123--135.
+% \end{thebibliography}
+
+% \noindent {\it Basic format for periodicals:}
+
+% \noindent J. K. Author, ``Name of paper,'' {\it Abbrev. Title of Periodical}, vol. {\it x, no}. $x, $pp{\it . xxx-xxx,}Abbrev. Month, year, DOI.
+%  {10.1109.} {{\it XXX}} {.123456}.
+
+% {\it Examples:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib3} J. U. Duncombe, ``Infrared navigation---Part I: An assessment of feasibility,'' {\it IEEE Trans. Electron Devices}, vol. ED-11, no. 1, pp. 34--39, Jan. 1959, doi:.  {10.1109/TED.2016.2628402}.
+% \bibitem{bib4} E. P. Wigner, ``Theory of traveling-wave optical laser,''
+% {\it Phys. Rev}., vol. 134, pp. A635--A646, Dec. 1965, doi:  {10.1109.} {{\it XXX}} {.123456}.
+% \bibitem{bib5} E. H. Miller, ``A note on reflector arrays,'' {\it IEEE Trans. Antennas Propagat}., to be published.
+% \end{thebibliography}
+
+% \noindent {\it Basic format for reports:}
+
+% \noindent J. K. Author, ``Title of report,'' Abbrev. Name of Co., City of Co., Abbrev.
+% State, Country, Rep. {\it xxx}, year.
+
+% {\it Examples:}
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib6} E. E. Reber, R. L. Michell, and C. J. Carter, ``Oxygen absorption in the earth's atmosphere,'' Aerospace Corp., Los Angeles, CA, USA, Tech. Rep. TR-0200 (4230-46)-3, Nov. 1988.
+% \bibitem{bib7} J. H. Davis and J. R. Cogdell, ``Calibration program for the 16-foot antenna,'' Elect. Eng. Res. Lab., Univ. Texas, Austin, TX, USA, Tech. Memo. NGL-006-69-3, Nov. 15, 1987.
+% \end{thebibliography}
+
+% \noindent {\it Basic format for handbooks:}
+
+% \noindent {\it Name of Manual/Handbook, x} ed., Abbrev. Name of Co., City of Co., Abbrev. State, Country, year, pp.
+% {\it xxx-xxx.}
+
+% {\it Examples:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib8} {\it Transmission Systems for Communications}, 3rd ed., Western Electric Co., Winston-Salem, NC, USA, 1985, pp. 44--60.
+% \bibitem{bib9} {\it Motorola Semiconductor Data Manual}, Motorola Semiconductor Products Inc., Phoenix, AZ, USA, 1989.
+% \end{thebibliography}
+
+% \noindent {\it Basic format for books (when available online):}
+
+% \noindent J. K. Author, ``Title of chapter in the book,'' in {\it Title of Published Book}, $x$th ed. City of
+% Publisher, State, Country: Abbrev. of Publisher, year, ch.$x$, sec. $x$, pp.
+% {\it xxx--xxx}. [Online]. Available:  {http://www.web.com}
+
+
+
+
+% {\it Examples:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib10} G. O. Young, ``Synthetic structure of industrial plastics,'' in Plastics, vol. 3, Polymers of Hexadromicon, J. Peters, Ed., 2nd ed. New York, NY, USA: McGraw-Hill, 1964, pp. 15-64. [Online]. Available:  {http://www.bookref.com}.
+% \bibitem{bib11} {\it The Founders' Constitution}, Philip B. Kurland and Ralph Lerner, eds., Chicago, IL, USA: Univ. Chicago Press, 1987. [Online]. Available:  {http://press-pubs.uchicago.edu/founders/}
+% \bibitem{bib12} The Terahertz Wave eBook. ZOmega Terahertz Corp., 2014. [Online]. Available:  {http://dl.z-thz.com/eBook/zomega\_ebook\_pdf\_1206\_sr.pdf}. Accessed on: May 19, 2014.
+% \bibitem{bib13} Philip B. Kurland and Ralph Lerner, eds., {\it The Founders' Constitution.}Chicago, IL, USA: Univ. of Chicago Press, 1987, Accessed on: Feb. 28, 2010, [Online] Available:  {http://press-pubs.uchicago.edu/founders/}
+% \end{thebibliography}
+
+% \noindent {\it Basic format for journals (when available online):}
+
+% \noindent J. K. Author, ``Name of paper,'' {\it Abbrev. Title of Periodical}, vol. $x$, no. $x$, pp. {\it xxx-xxx}, Abbrev. Month, year.
+% Accessed on: Month, Day, year, doi:  {10.1109.} {{\it
+% XXX}} {.123456}, [Online].
+
+% {\it Examples:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib14} J. S. Turner, ``New directions in communications,'' {\it IEEE J. Sel. Areas Commun}., vol. 13, no. 1, pp. 11-23, Jan. 1995. DOI.  {10.1109.} {{\it XXX}} {.123456}.
+% \bibitem{bib15} W. P. Risk, G. S. Kino, and H. J. Shaw, ``Fiber-optic frequency shifter using a surface acoustic wave incident at an oblique angle,'' {\it Opt. Lett.}, vol. 11, no. 2, pp. 115--117, Feb. 1986, doi: {10.1109.} {{\it XXX}} {.123456}.
+% \bibitem{bib16} P. Kopyt {\it \textit{et al.}, ``}Electric properties of graphene-based conductive layers from DC up to terahertz range,'' {\it IEEE THz Sci. Technol.,}to be published, doi:  {10.1109/TTHZ.2016.2544142}.
+% \end{thebibliography}
+
+% \noindent {\it Basic format for papers presented at conferences (when available online):}
+
+% \noindent J.K. Author. (year, month). Title. presented at abbrev. conference title.
+% [Type of Medium]. Available: site/path/file
+% \\
+% \\
+% \\
+% {\it Example:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib17} PROCESS Corporation, Boston, MA, USA. Intranets: Internet technologies deployed behind the firewall for corporate productivity. Presented at INET96 Annual Meeting. [Online]. Available:  {http://home.process.com/Intranets/wp2.htp}
+% \end{thebibliography}
+
+% \noindent {\it Basic format for reports and handbooks (when available online):}
+
+% \noindent J. K. Author. ``Title of report,'' Company. City, State, Country. Rep. no.,
+% (optional: vol./issue), Date. [Online] Available:\\
+% {site/path/file}\\
+
+% {\it Examples:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib18} R. J. Hijmans and J. van Etten, ``Raster: Geographic analysis and modeling with raster data,'' R Package Version 2.0-12, Jan. 12, 2012. [Online]. Available:  {http://CRAN.R-project.org/package$=$raster} {}
+% \bibitem{bib19} Teralyzer. Lytera UG, Kirchhain, Germany [Online]. Available: http://www.lytera.de/Terahertz\_THz\_Spectroscopy.php?id$=$home, Accessed on: Jun. 5, 2014
+% \end{thebibliography}
+
+% \noindent {\it Basic format for computer programs and electronic documents (when available online):}
+
+% \noindent Legislative body. Number of Congress, Session. (year, month day). {\it Number of bill or resolution}, {\it Title}. [Type
+% of medium]. Available: site/path/file
+
+% \noindent {\bf {\it NOTE:}} ISO recommends that capitalization follow the accepted
+% practice for the language or script in which the information is given.
+
+
+
+% {\it Example:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib20} U.S. House. 102nd Congress, 1st Session. (1991, Jan. 11). {\it H. Con. Res. 1, Sense of the Congress on Approval of Military Action}. [Online]. Available: LEXIS Library: GENFED File: BILLS
+% \end{thebibliography}
+
+% \noindent {\it Basic format for patents (when available online):}
+
+% \noindent Name of the invention, by inventor's name. (year, month day). Patent Number  [Type
+% of medium]. Available:  {site/path/file}
+
+% {\it Example:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib21} Musical toothbrush with mirror, by L.M.R. Brooks. (1992, May 19). Patent D 326 189 [Online]. Available: NEXIS Library: LEXPAT File: DES
+% \end{thebibliography}
+
+
+% \noindent {\it Basic format for conference proceedings (published):}
+
+% \noindent J. K. Author, ``Title of paper,'' in {\it Abbreviated Name of Conf.}, City of Conf., Abbrev. State (if
+% given), Country, year, pp. {\it xxxxxx.}
+
+% {\it Example:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib22} D. B. Payne and J. R. Stern, ``Wavelength-switched passively coupled single-mode optical network,'' in {\it Proc. IOOC-ECOC,}Boston, MA, USA,  1985,
+% pp. 585--590, doi:  {10.1109.} {{\it XXX}} {.123456}.
+% \end{thebibliography}
+
+% {\it Example for papers presented at conferences (unpublished):}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib23} D. Ebehard and E. Voges, ``Digital single sideband detection for interferometric sensors,'' presented at the {\it 2nd Int. Conf. Optical Fiber Sensors,} Stuttgart, Germany, Jan. 2-5, 1984.
+% \end{thebibliography}
+
+% \noindent {\it Basic format for patents:}
+
+% \noindent J. K. Author, ``Title of patent,'' U.S. Patent {\it x xxx xxx}, Abbrev. Month, day, year.
+
+% {\it Example:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib24} G. Brandli and M. Dick, ``Alternating current fed power supply,'' U.S. Patent 4 084 217, Nov. 4, 1978.
+% \end{thebibliography}
+
+% \noindent {\it Basic format} {\it for theses (M.S.) and dissertations (Ph.D.):}
+
+% \noindent a) J. K. Author, ``Title of thesis,'' M.S. thesis, Abbrev. Dept., Abbrev.
+% Univ., City of Univ., Abbrev. State, year.
+
+% \noindent b) J. K. Author, ``Title of dissertation,'' Ph.D. dissertation, Abbrev.
+% Dept., Abbrev. Univ., City of Univ., Abbrev. State, year.
+
+% {\it Examples:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib25} J. O. Williams, ``Narrow-band analyzer,'' Ph.D. dissertation, Dept. Elect. Eng., Harvard Univ., Cambridge, MA, USA, 1993.
+% \bibitem{bib26} N. Kawasaki, ``Parametric study of thermal and chemical nonequilibrium nozzle flow,'' M.S. thesis, Dept. Electron. Eng., Osaka Univ., Osaka, Japan, 1993.
+% \end{thebibliography}
+
+% \noindent {\it Basic format for the most common types of unpublished references:}
+
+% \noindent a) J. K. Author, private communication, Abbrev. Month, year.
+
+% \noindent b) J. K. Author, ``Title of paper,'' unpublished.
+
+% \noindent c) J. K. Author, ``Title of paper,'' to be published.
+
+% {\it Examples:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib27} A. Harrison, private communication, May 1995.
+% \bibitem{bib28} B. Smith, ``An approach to graphs of linear forms,'' unpublished.
+% \bibitem{bib29} A. Brahms, ``Representation error for real numbers in binary computer arithmetic,'' IEEE Computer Group Repository, Paper R-67-85.
+% \end{thebibliography}
+
+% \noindent {\it Basic formats for standards:}
+
+% \noindent a) {\it Title of Standard}, Standard number, date.
+
+% \noindent b) {\it Title of Standard}, Standard number, Corporate author, location, date.
+
+% {\it Examples:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib30} IEEE Criteria for Class IE Electric Systems, IEEE Standard 308, 1969.
+% \bibitem{bib31} Letter Symbols for Quantities, ANSI Standard Y10.5-1968.
+% \end{thebibliography}
+
+% {\it Article number in~reference examples:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib32} R. Fardel, M. Nagel, F. Nuesch, T. Lippert, and A. Wokaun, ``Fabrication of organic light emitting diode pixels by laser-assisted forward transfer,'' {\it Appl. Phys. Lett.}, vol. 91, no. 6, Aug. 2007, Art. no. 061103, doi:  {10.1109.} {{\it XXX}} {.123456}.
+% \bibitem{bib33} J. Zhang and N. Tansu, ``Optical gain and laser characteristics of InGaN quantum wells on ternary InGaN substrates,'' {\it IEEE Photon. J.}, vol. 5, no. 2, Apr. 2013, Art. no. 2600111, doi:  {10.1109.} {{\it XXX}} {.123456}.
+% \end{thebibliography}
+
+% {\it Example when using \textit{et al.}:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib34} S. Azodolmolky~{{et al.}}, Experimental demonstration of an impairment aware network planning and operation tool for transparent/translucent optical networks,''~{\it J. Lightw. Technol.}, vol. 29, no. 4, pp. 439--448, Sep. 2011,doi:  {10.1109.} {{\it XXX}} {.123456}.
+% \end{thebibliography}
+
+% \noindent {\it Basic format for datasets:}
+
+% \noindent Author,  Date, Year. ``Title of Dataset,'' distributed by Publisher/Distributor, http://url.com (or if DOI is used, end with a period)
+
+% {\it Example:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib35} U.S. Department of Health and Human Services, Aug. 2013, ``Treatment Episode Dataset: Discharges (TEDS-D): Concatenated, 2006 to 2009,'' U.S. Department of Health and Human Services, Substance Abuse and Mental Health Services Administration, Office of Applied Studies, doi: 10.3886/ICPSR30122.v2.
+% \end{thebibliography}
+
+% \noindent {\it Basic format for code:}
+
+% \noindent Author,  Date published or disseminated, Year. ``Complete title, including ed./vers.\#,'' distributed by Publisher/Distributor, http://url.com (or if DOI is used, end with a period)
+
+% {\it Example:}{\vadjust{\vspace*{-2.5em}}}
+
+% \begin{thebibliography}{00}\leftskip1pc
+% \bibitem{bib36} T. D'Martin and S. Soares, 2019, ``Code for Assessment of Markov Decision Processes in Long-Term Hydrothermal Scheduling of Single-Reservoir Systems (Version 1.0),'' Code Ocean, doi: \_1.24433/CO.7212286.v1
+% \end{thebibliography}
+
+% \begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{a1.png}}]{First A. Author} (Fellow, IEEE) and all authors may include 
+% biographies. Biographies are
+% often not included in conference-related papers.
+% This author is an IEEE Fellow. The first paragraph
+% may contain a place and/or date of birth (list
+% place, then date). Next, the author’s educational
+% background is listed. The degrees should be listed
+% with type of degree in what field, which institution,
+% city, state, and country, and year the degree was
+% earned. The author’s major field of study should
+% be lower-cased.
+
+% The second paragraph uses the pronoun of the person (he or she) and
+% not the author’s last name. It lists military and work experience, including
+% summer and fellowship jobs. Job titles are capitalized. The current job must
+% have a location; previous positions may be listed without one. Information
+% concerning previous publications may be included. Try not to list more than
+% three books or published articles. The format for listing publishers of a book
+% within the biography is: title of book (publisher name, year) similar to a
+% reference. Current and previous research interests end the paragraph.
+
+% The third paragraph begins with the author’s title and last name (e.g.,
+% Dr. Smith, Prof. Jones, Mr. Kajor, Ms. Hunter). List any memberships in
+% professional societies other than the IEEE. Finally, list any awards and work
+% for IEEE committees and publications. If a photograph is provided, it should
+% be of good quality, and professional-looking.
+% \end{IEEEbiography}
+
+% \begin{IEEEbiographynophoto}{Second B. Author,} photograph and biography not available at the
+% time of publication.
+% \end{IEEEbiographynophoto}
+
+% \begin{IEEEbiographynophoto}{Third C. Author Jr.} (Member, IEEE), photograph and biography not available at the
+% time of publication.
+% \end{IEEEbiographynophoto}
+
+\end{document}

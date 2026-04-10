@@ -1,0 +1,31 @@
+\subsection{RQ2 -- Ablation Study}
+
+\subsubsection{For Stress Classification}
+
+To evaluate the specific contribution of the attention mechanism to our classification framework, we conducted an ablation study on the WESAD dataset. We compared the proposed Attention DNN against a Standard DNN baseline using binary stress classification, Stress vs. Non-Stress. As summarized in Table \ref{tab:ablation_final}, the inclusion of the attention module yields a substantial improvement in the model's ability to characterize physiological states.
+
+The Attention DNN demonstrates a marked improvement in overall performance, with Accuracy rising from 96.28\% to 97.97\% and the $F_1$ Score increasing significantly from 92.87\% to 95.78\%. This final $F_1$ score notably exceeds the performance of competitive benchmarks. A granular analysis reveals that the attention mechanism's primary impact lies in its capacity to enhance Precision, which saw a substantial gain of 7.58\%, rising to 96.26\%. This improvement suggests that the attention module enables the network to more effectively prioritize discriminative temporal segments within the high-dimensional physiological signal. By focusing on key physiological perturbations, the model reduces false-positive detections and produces more selective and reliable predictions.
+
+While this gain in Precision is accompanied by a moderate 4.38\% decrease in Recall, the overall increase in the $F_1$ score confirms that the trade-off is beneficial. This phenomenon suggests that while the attention mechanism might overlook some subtle perturbations, it successfully refines the feature representation to be more robust against noise. For real-time monitoring applications, this shift toward higher specificity is particularly valuable because it minimizes user-facing false alarms without compromising the model's overall diagnostic integrity.
+
+\subsubsection{For RAG Enhancement}
+
+To evaluate the contribution of the Retrieval-Augmented Generation component to the system's performance, we conducted an ablation study comparing a baseline model, Control, against the RAG-enhanced system, Experimental, integrated with the CounselChat expert corpus. The evaluation utilized two complementary metrics, TF-IDF Cosine Similarity for lexical overlap and BERTScore F1 using \texttt{roberta-large}, for semantic and contextual alignment across 282 queries.
+
+\textbf{a. Overall Lexical and Semantic Alignment.}\\
+The integration of RAG yielded a positive trend across both evaluation metrics. The mean TF-IDF Cosine Similarity improved by 5.8\%, from 0.0416 to 0.0440, while the BERTScore F1 demonstrated a semantic gain of 7.7\%, from 0.0784 to 0.0844. Additionally, BERTScore Precision increased by 10.4\%, rising from 0.1158 to 0.1278.
+
+\textbf{b. Performance Stability and Edge Case Mitigation.}\\
+A significant finding is the impact of RAG on the system's performance floor and ceiling. By grounding the agent in professional counseling data, the system minimized instances of low-quality lexical alignment:
+\begin{itemize}
+    \item The minimum similarity score rose from 0.0028 to 0.0046, representing a 64.3\% improvement in the worst-case performance scenario.
+    \item The maximum similarity score increased by 10.6\%, from 0.1786 to 0.1975, suggesting that RAG allows the model to achieve higher peaks of expert-level alignment.
+\end{itemize}
+
+\textbf{c. Domain-Specific Efficacy.}\\
+The RAG mechanism proved exceptionally effective in specialized counseling domains where general-purpose LLMs often lack depth. Notable improvements include:
+\begin{itemize}
+    \item Parenting, with a TF-IDF similarity gain from 0.0048 to 0.1075.
+    \item Military issues, with TF-IDF similarity increasing from 0.0481 to 0.1198.
+    \item Complex intersections, such as grief and loss, substance abuse, and trauma, with a BERTScore F1 increase of 0.1878.
+\end{itemize}

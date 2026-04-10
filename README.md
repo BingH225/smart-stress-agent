@@ -38,6 +38,11 @@ Create a `.env` file in the project root:
 ```env
 GOOGLE_API_KEY=your_google_api_key_here
 FRONTEND_PATH=/path/to/smart-stress-ui/dist
+DB_HOST=your_tidb_host
+DB_PORT=4000
+DB_USERNAME=your_tidb_user
+DB_PASSWORD=your_tidb_password
+DB_DATABASE=your_tidb_database
 ```
 
 *(Alternatively, you can use a legacy `.API_KEY` file for the API key)*
@@ -70,7 +75,8 @@ The project includes several ready-to-use scripts for verifying core functionali
 
 * `python run_api_key_test.py`: Smoke test for the full "Sense -> Chat -> Plan" flow.
 * `python verify_persistence.py`: Verifies state recovery from `smartstress.db` after a restart.
-* `python test_memory_recall.py`: Simulates resuming a conversation to test context memory.
+* `python test_api_conn.py`: Tests LLM API connectivity.
+* `python smoke_test.py`: Quick RAG retrieval smoke test.
 
 ### Starting the Server
 
@@ -92,7 +98,7 @@ MindCare can utilize local documents to enhance its responses.
     ```bash
     python -m smartstress_langgraph.examples.ingest_docs_example rag_docs
     ```
-    This generates a local vector index (`.rag_store/`) for runtime retrieval.
+    This writes embeddings and documents into TiDB tables (`rag_documents`, `rag_embeddings`) for runtime retrieval.
 
 ## 📂 Project Structure
 

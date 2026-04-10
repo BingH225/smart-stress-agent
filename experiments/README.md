@@ -2,122 +2,99 @@
 
 ## Overview
 
-This experiment evaluates the impact of integrating CounselChat data into the SmartStress Agent's RAG system through an automated A/B test.
+This experiment measures the impact of CounselChat RAG on SmartStress responses
+using an A/B test:
+- Control: `use_rag=False`
+- Experimental: `use_rag=True`
+
+The current evaluation pipeline is metric-based (not LLM-judge):
+- TF-IDF cosine similarity (`evaluate_results.py`)
+- Optional BERTScore (`evaluate_bertscore.py`)
 
 ## Prerequisites
 
-1. TiDB with RAG documents ingested (run `python ingest_counselchat_tidb.py` to add remaining documents)
-2. Python environment with all dependencies installed
+1. TiDB has RAG documents ingested (for example: `python ingest_counselchat_tidb.py`)
+2. Python environment with dependencies installed (`pip install -r requirements.txt`)
 3. `GOOGLE_API_KEY` configured in `.env`
 
-## Experiment Workflow
+For BERTScore step, prepare a PyTorch-capable env (CPU or CUDA) and install:
+- `bert-score`
+- `torch`
+
+## Workflow
 
 ### Step 1: Run A/B Test
-
-Execute test queries through both control and experimental groups:
 
 ```bash
 python experiments/run_ab_test.py
 ```
 
-**What it does:**
-- Loads 25 test queries from `experiments/test_queries.json`
-- Runs each query through:
-  - **Control Group:** No RAG enhancement
-  - **Experimental Group:** With CounselChat RAG (k=3)
-- Saves raw results to `experiments/ab_test_results_TIMESTAMP.json`
+What it does:
+- Loads queries from `experiments/test_queries.json`
+- Runs each query in both control/experimental groups
+- Saves raw output to `experiments/report/ab_test_results_<timestamp>.json`
 
-**Expected duration:** ~30-60 minutes (depends on agent response time)
-
-### Step 2: Evaluate Results
-
-Use LLM-as-a-judge to score all responses:
+### Step 2A: Evaluate with TF-IDF (default)
 
 ```bash
-python experiments/evaluate_results.py experiments/ab_test_results_TIMESTAMP.json
+python experiments/evaluate_results.py experiments/report/ab_test_results_<timestamp>.json
 ```
 
-**What it does:**
-- Loads A/B test results
-- Evaluates each response using Gemini as judge
-- Scores on 4 metrics (1-5 scale):
-  - Groundedness
-  - Stressor Identification
-  - Safety Compliance
-  - Response Quality
-- Saves evaluated results to `experiments/ab_test_results_TIMESTAMP_evaluated.json`
+What it does:
+- Computes TF-IDF cosine similarity between response and ground truth
+- Produces `experiments/report/ab_test_results_<timestamp>_evaluated.json`
 
-**Expected duration:** ~20-40 minutes (25 queries × 2 groups = 50 evaluations)
-
-### Step 3: Generate Report
-
-Create a comprehensive comparison report:
+### Step 2B: Evaluate with BERTScore (optional)
 
 ```bash
-python experiments/generate_report.py experiments/ab_test_results_TIMESTAMP_evaluated.json
+python experiments/evaluate_bertscore.py experiments/report/ab_test_results_<timestamp>.json
 ```
 
-**What it does:**
-- Calculates statistics for both groups
-- Compares performance metrics
-- Generates findings and recommendations
-- Creates Markdown report: `experiments/ab_test_results_TIMESTAMP_report.md`
+What it does:
+- Computes Precision / Recall / F1 via BERTScore
+- Produces `experiments/report/ab_test_results_<timestamp>_bertscore.json`
 
-## Files Created
+### Step 3A: Generate TF-IDF Report
 
-| File                               | Description                                      |
-| ---------------------------------- | ------------------------------------------------ |
-| `test_queries.json`                | 25 test queries across diverse stress categories |
-| `ab_test_config.py`                | Test configuration and evaluation metrics        |
-| `run_ab_test.py`                   | A/B test runner                                  |
-| `evaluate_results.py`              | LLM-as-a-judge evaluator                         |
-| `generate_report.py`               | Report generator                                 |
-| `ab_test_results_*.json`           | Raw test results                                 |
-| `ab_test_results_*_evaluated.json` | Evaluated results with scores                    |
-| `ab_test_results_*_report.md`      | Final comparison report                          |
+```bash
+python experiments/generate_report.py experiments/report/ab_test_results_<timestamp>_evaluated.json
+```
 
-## Key Configuration
+### Step 3B: Generate Combined Report (TF-IDF + BERTScore)
 
-### Test Groups
+```bash
+python experiments/generate_report_combined.py experiments/report/ab_test_results_<timestamp>_evaluated.json experiments/report/ab_test_results_<timestamp>_bertscore.json
+```
 
-**Control (Group A):**
-- No RAG enhancement
-- Baseline agent performance
+## Files and Roles
 
-**Experimental (Group B):**
-- CounselChat RAG enabled
-- Retrieves k=3 most similar documents
-- Filters by tags: `["psychoeducation", "counselchat"]`
+| File | Role |
+|---|---|
+| `test_queries.json` | Query set |
+| `ab_test_config.py` | Group config and metric config |
+| `run_ab_test.py` | A/B runner |
+| `evaluate_results.py` | TF-IDF evaluator |
+| `evaluate_bertscore.py` | BERTScore evaluator (optional) |
+| `generate_report.py` | TF-IDF report |
+| `generate_report_combined.py` | Combined metrics report |
 
-### Evaluation Metrics
+## Key Metrics
 
-Each response is scored 1-5 on:
-1. **Groundedness:** Evidence-based, grounded in professional knowledge
-2. **Stressor Identification:** Accurately identifies user's stressors
-3. **Safety Compliance:** Safe, appropriate, ethical advice
-4. **Response Quality:** Overall helpfulness and empathy
+1. TF-IDF cosine similarity (lexical alignment)
+2. BERTScore F1/Precision/Recall (semantic alignment)
+3. Group deltas and significance from report scripts
 
 ## Troubleshooting
 
-### API Rate Limits
+### TiDB documents missing
 
-If you encounter rate limit errors during evaluation:
-- The scripts will continue with errors logged
-- Consider adding delays between evaluation calls
-- Results with errors will be marked in the output
+If retrieval quality is low because docs were not ingested:
 
-### Missing Documents in TiDB
-
-If TiDB doesn't have enough documents (should be ~868):
 ```bash
 python ingest_counselchat_tidb.py
 ```
-The script will skip already-ingested documents and only process new ones.
 
-## Next Steps
+### BERTScore runtime issues
 
-After generating the report:
-1. Review the findings in `*_report.md`
-2. Analyze which categories benefited most from RAG
-3. Consider adjusting RAG parameters (k value, retrieval method)
-4. If results are positive, integrate RAG into production agent
+- If GPU OOM occurs, reduce batch size in `evaluate_bertscore.py`.
+- If no CUDA is available, script falls back to CPU.
