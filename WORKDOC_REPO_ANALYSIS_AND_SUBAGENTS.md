@@ -416,3 +416,37 @@
     - F1: 0.6132
   - Report file:
     - `D:\NUS\BMI5101\smart-stress-model\Results_SWELL_Approx\swell_approx_eval_report.json`
+
+## 19. Remote GPU Container Job Submission - 2026-04-10
+- SSH connectivity test:
+  - Host: `aspire2a.nus`
+  - Result: success (`CONNECT_OK`, login host reached)
+- Remote run root created under scratch:
+  - ` /home/users/nus/e1553307/scratch/smartstress_jobs/swell_approx_20260410_093850 `
+- Virtual environment created under that run root:
+  - ` /home/users/nus/e1553307/scratch/smartstress_jobs/swell_approx_20260410_093850/.venv `
+- Uploaded bundle:
+  - `remote_bundle_gpu_20260410.tar.gz`
+  - extracted to `remote_bundle_gpu_20260410/`
+- Job mode:
+  - PBS + Apptainer container execution
+  - GPU request in job resource list (`ngpus=1`)
+- Submitted jobs:
+  - `13609045.pbs101` (failed, image lacked torch)
+  - `13609152.pbs101` (failed, reused old runtime image)
+  - `13609211.pbs101` (current job, queued)
+- Current active request:
+  - Job `13609211.pbs101`
+  - Queue: `gdev`
+  - Requested resources: `select=1:ncpus=16:ngpus=1:mem=110GB`, `walltime=01:30:00`
+  - Scheduler comment at submission check: insufficient available `ngpus`, waiting for GPU slot.
+- Queue routing correction:
+  - Direct submit to `g1` is denied because `g1` is route-only in current policy.
+  - Submitted via `normal` with `walltime > 2h` to force routing into `g1`.
+- Updated container execution to avoid host Python shadowing:
+  - Changed from `apptainer exec ... bash -lc "python ..."` to `apptainer exec --cleanenv ... python ...`.
+- New active job on `g1`:
+  - Job ID: `13612943.pbs101`
+  - Queue: `g1`
+  - Resources: `select=1:ncpus=16:ngpus=1:mem=110GB`, `walltime=02:10:00`
+  - Current state at submit check: `Q` (waiting for GPU slot)

@@ -51,6 +51,7 @@ langgraph/
 .settings/
 *.sublime-project
 *.sublime-workspace
+.codex/
 
 # Jupyter Notebook
 .ipynb_checkpoints
